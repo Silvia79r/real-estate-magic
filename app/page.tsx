@@ -1,78 +1,101 @@
 'use client';
 
 import React, { useState, ChangeEvent } from 'react';
-import { Camera, Wand2, Share2, CreditCard } from 'lucide-react';
+import { Camera, Wand2, Share2, CreditCard, Sparkles, Layout } from 'lucide-react';
 
 export default function RealEstateMagic() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLoading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
+        setLoading(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4">
-      {/* Header */}
-      <header className="flex justify-between items-center py-4 mb-6">
-        <h1 className="text-2xl font-black tracking-tight text-blue-600">RE-MAGIC</h1>
-        <div className="flex gap-2 text-xs font-bold bg-white p-1 rounded-full shadow-sm">
-          <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded-full italic uppercase">Pro Tier</span>
+    <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 font-sans pb-20">
+      {/* Header Premium */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100 px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Sparkles className="text-white" size={18} />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">RE-Magic</h1>
+        </div>
+        <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+          AI Active
         </div>
       </header>
 
-      {/* Upload Area */}
-      <div className="w-full aspect-square border-2 border-dashed border-blue-200 rounded-3xl bg-white flex flex-col items-center justify-center p-6 text-center shadow-xl active:scale-[0.98] transition-all relative overflow-hidden">
-        <input 
-          type="file" 
-          accept="image/*" 
-          onChange={handleFileChange}
-          className="absolute inset-0 opacity-0 z-10 cursor-pointer"
-        />
-        
-        {imagePreview ? (
-          <img 
-            src={imagePreview} 
-            alt="Preview" 
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        ) : (
-          <>
-            <div className="bg-blue-50 p-5 rounded-full mb-4">
-              <Camera size={48} className="text-blue-500" />
-            </div>
-            <h3 className="text-lg font-bold uppercase tracking-wide">Scatta o Carica Foto</h3>
-            <p className="text-slate-400 text-sm mt-2">Tocca per iniziare</p>
-          </>
-        )}
-      </div>
-
-      {/* AI Action Menu */}
-      <div className="grid grid-cols-2 gap-4 mt-8">
-        <button className="flex flex-col items-center justify-center bg-white p-6 rounded-3xl shadow-md border border-slate-100 active:bg-blue-50 transition-colors">
-          <Wand2 className="text-purple-500 mb-2" />
-          <span className="font-bold text-sm">Virtual Staging</span>
-        </button>
-        <button className="flex flex-col items-center justify-center bg-white p-6 rounded-3xl shadow-md border border-slate-100 active:bg-blue-50 transition-colors">
-          <Share2 className="text-green-500 mb-2" />
-          <span className="font-bold text-sm">Export Social</span>
-        </button>
-      </div>
-
-      {/* Stripe Quick Pay */}
-      <div className="mt-8 bg-black text-white p-6 rounded-3xl flex items-center justify-between shadow-2xl">
-        <div>
-          <p className="text-xs opacity-60">Piano Illimitato</p>
-          <p className="text-xl font-bold">€29.99<span className="text-sm font-normal">/mese</span></p>
+      <main className="px-6 pt-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold leading-tight">Trasforma il tuo immobile in un sogno</h2>
+          <p className="text-slate-500 mt-2 text-sm">Carica una foto e lascia che l'AI faccia il resto.</p>
         </div>
-        <button className="bg-white text-black px-6 py-3 rounded-2xl font-bold flex items-center gap-2">
-          <CreditCard size={18} /> Pay
+
+        {/* Upload Area Migliorata */}
+        <div className={`relative w-full aspect-[4/5] rounded-[2.5rem] border-2 border-dashed transition-all duration-500 shadow-2xl shadow-blue-100/50 flex flex-col items-center justify-center p-8 overflow-hidden
+          ${imagePreview ? 'border-transparent' : 'border-blue-200 bg-blue-50/30'}`}>
+          
+          <input 
+            type="file" 
+            accept="image/*" 
+            onChange={handleFileChange}
+            className="absolute inset-0 opacity-0 z-30 cursor-pointer"
+          />
+          
+          {imagePreview ? (
+            <>
+              <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-[2.5rem]" />
+              <div className="absolute inset-0 bg-black/20 z-10" />
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur px-6 py-2 rounded-full font-bold text-sm">
+                Cambia Foto
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-blue-200">
+                <Camera size={32} className="text-white" />
+              </div>
+              <span className="text-lg font-bold">Inizia da qui</span>
+              <span className="text-slate-400 text-sm mt-1 underline">Sfoglia galleria</span>
+            </div>
+          )}
+        </div>
+
+        {/* AI Action Grid */}
+        <div className="grid grid-cols-2 gap-4 mt-10">
+          <button className="flex flex-col items-start p-5 bg-slate-50 rounded-[2rem] active:scale-95 transition-all">
+            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-3">
+              <Layout size={20} className="text-purple-600" />
+            </div>
+            <span className="font-bold text-sm">Virtual Staging</span>
+            <span className="text-[10px] text-slate-400 mt-1 uppercase">Arreda ora</span>
+          </button>
+          
+          <button className="flex flex-col items-start p-5 bg-slate-50 rounded-[2rem] active:scale-95 transition-all">
+            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-3">
+              <Share2 size={20} className="text-green-600" />
+            </div>
+            <span className="font-bold text-sm">Social Export</span>
+            <span className="text-[10px] text-slate-400 mt-1 uppercase">TikTok/IG</span>
+          </button>
+        </div>
+      </main>
+
+      {/* Fixed Bottom CTA */}
+      <div className="fixed bottom-6 left-6 right-6 z-50">
+        <button className="w-full bg-slate-950 text-white h-16 rounded-full font-bold flex items-center justify-center gap-3 shadow-2xl active:scale-[0.98] transition-all">
+          <Sparkles size={20} className="text-blue-400" />
+          Migliora Foto con AI
         </button>
       </div>
     </div>
