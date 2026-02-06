@@ -1,3 +1,4 @@
+// Update di emergenza per forzare il design
 'use client';
 
 import React, { useState } from 'react';
