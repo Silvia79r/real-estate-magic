@@ -1,3 +1,4 @@
+// Update di emergenza per forzare il design
 import './globals.css';
 
 export const metadata = {
