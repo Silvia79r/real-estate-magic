@@ -1,3 +1,5 @@
+'use client'; 
+
 import React, { useState } from 'react';
 import { Camera, Wand2, Share2, CreditCard } from 'lucide-react';
 
