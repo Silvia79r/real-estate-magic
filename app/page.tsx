@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, ChangeEvent } from 'react';
-import { Camera, Wand2, Share2, Sparkles, Layout, Loader2 } from 'lucide-react';
+import { Camera, Wand2, Share2, Sparkles, Layout, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function RealEstateMagic() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -11,83 +11,107 @@ export default function RealEstateMagic() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAIAction = () => {
-    if (!imagePreview) return alert("Carica prima una foto!");
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      alert("Connessione AI in corso...");
-    }, 2000);
-  };
-
   return (
-    // Il "max-w-md" e "mx-auto" servono a tenere tutto centrato e stretto come un'app
-    <div className="max-w-md mx-auto min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[#fdfdfd] text-slate-900 font-sans selection:bg-blue-100">
       
-      {/* Header fisso che non si rimpicciolisce */}
-      <header className="p-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
-        <h1 className="text-xl font-black tracking-tighter text-blue-600">RE-MAGIC</h1>
-        <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold">AI ACTIVE</span>
-      </header>
+      {/* Background Decorativo per dare profondità */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-purple-50 rounded-full blur-[100px] opacity-40" />
+      </div>
 
-      <main className="p-4 flex-1 flex flex-col gap-6">
-        <div className="text-center">
-          <h2 className="text-lg font-bold italic-none">Carica la foto dell'immobile</h2>
-        </div>
-
-        {/* CONTENITORE FOTO BLINDATO: Non può uscire dallo schermo */}
-        <div className="relative w-full aspect-square bg-white rounded-3xl border-2 border-dashed border-slate-200 shadow-inner overflow-hidden flex items-center justify-center">
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={handleFileChange}
-            className="absolute inset-0 opacity-0 z-20 cursor-pointer"
-          />
-          
-          {imagePreview ? (
-            <img 
-              src={imagePreview} 
-              alt="Preview" 
-              className="w-full h-full object-cover" // Forza la foto a riempire il quadrato senza deformarsi o uscire
-            />
-          ) : (
-            <div className="flex flex-col items-center text-slate-300">
-              <Camera size={48} />
-              <p className="mt-2 text-sm font-medium">Tocca per scattare</p>
+      {/* Navigazione Pro */}
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+              <Sparkles className="text-white" size={20} />
             </div>
-          )}
+            <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
+              RE-MAGIC
+            </span>
+          </div>
+          <button className="hidden md:flex items-center gap-2 text-sm font-bold bg-slate-900 text-white px-5 py-2.5 rounded-full hover:bg-slate-800 transition-all">
+            Dashboard <ArrowRight size={16} />
+          </button>
+        </div>
+      </nav>
+
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 lg:py-20 grid lg:grid-cols-2 gap-16 items-center">
+        
+        {/* Testi di impatto */}
+        <div className="space-y-8">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">AI Engine V.2 Live</span>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-black leading-[1.1] tracking-tight text-slate-900">
+              Trasforma ogni stanza in un <span className="text-blue-600 italic">capolavoro.</span>
+            </h2>
+            <p className="mt-6 text-lg text-slate-500 max-w-md leading-relaxed">
+              Il primo strumento di Virtual Staging in tempo reale. Carica una foto, scegli lo stile e vendi l'immobile più velocemente.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+              <CheckCircle2 size={18} className="text-green-500" /> Correzione prospettica automatica
+            </div>
+            <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+              <CheckCircle2 size={18} className="text-green-500" /> Generazione tour video 4K (Veo)
+            </div>
+          </div>
         </div>
 
-        {/* Pulsanti Azione Grandi */}
-        <div className="grid grid-cols-2 gap-4">
-          <button onClick={handleAIAction} className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-            <Layout className="text-purple-600" />
-            <span className="text-xs font-bold uppercase tracking-tight">Virtual Staging</span>
-          </button>
-          <button className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-            <Share2 className="text-green-600" />
-            <span className="text-xs font-bold uppercase tracking-tight">Export Social</span>
-          </button>
+        {/* Studio di Caricamento (Il pezzo forte) */}
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[3rem] blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+          
+          <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-4 md:p-6 overflow-hidden min-h-[500px] flex flex-col">
+            <div className="relative flex-1 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 overflow-hidden group/upload transition-all hover:border-blue-400">
+              <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 z-50 cursor-pointer" />
+              
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover animate-in fade-in zoom-in duration-500" />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 group-hover/upload:scale-110 transition-transform duration-500">
+                    <Camera size={32} className="text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Trascina o scatta</h3>
+                  <p className="text-slate-400 text-sm">Formati supportati: JPG, PNG, HEIC</p>
+                </div>
+              )}
+            </div>
+
+            {/* Azioni Pro */}
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <button onClick={() => setIsProcessing(true)} className="flex items-center justify-center gap-2 p-4 bg-slate-900 text-white rounded-[1.5rem] font-bold text-sm hover:bg-blue-600 transition-colors">
+                <Wand2 size={18} /> Virtual Staging
+              </button>
+              <button className="flex items-center justify-center gap-2 p-4 bg-slate-100 text-slate-900 rounded-[1.5rem] font-bold text-sm hover:bg-slate-200 transition-colors">
+                <Share2 size={18} /> Social Mix
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Bottone AI Fisso in basso */}
-      <div className="p-4 bg-white border-t border-slate-100 shrink-0">
-        <button 
-          onClick={handleAIAction}
-          disabled={isProcessing}
-          className="w-full h-14 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
-        >
-          {isProcessing ? <Loader2 className="animate-spin" /> : <><Sparkles size={18}/> MIGLIORA CON AI</>}
+      {/* Footer Mobile/Tablet specifico */}
+      <footer className="fixed bottom-0 left-0 right-0 p-4 lg:hidden z-50 bg-white/80 backdrop-blur-lg border-t border-slate-100">
+        <button className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 flex items-center justify-center gap-2">
+          {isProcessing ? <Loader2 className="animate-spin" /> : <><Sparkles size={18} /> Migliora con AI</>}
         </button>
-      </div>
+      </footer>
     </div>
   );
 }
