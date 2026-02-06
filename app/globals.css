@@ -3,27 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 248, 250, 252; /* Slate-50 */
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  -webkit-tap-highlight-color: transparent; /* Ottimizzazione Mobile */
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: #f8fafc;
 }
 
-/* Rende l'esperienza touch più fluida */
-button {
-  touch-action: manipulation;
-}
+/* Impedisce alle immagini di rompere il layout */
 img {
   max-width: 100%;
-  height: auto;
   display: block;
-}
-
-body {
-  touch-action: pan-x pan-y;
-  overscroll-behavior: none;
 }
