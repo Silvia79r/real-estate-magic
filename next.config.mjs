@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // Questo comando crea la cartella 'out' che hai impostato
+  // Rimuoviamo output: 'export' se presente
   images: {
-    unoptimized: true, // Necessario per far funzionare le immagini nella cartella 'out'
+    unoptimized: true,
   },
-};
+}
 
-export default nextConfig;
+module.exports = nextConfig
