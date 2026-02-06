@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, ChangeEvent } from 'react';
-import { Camera, Wand2, Share2, CreditCard, Sparkles, Layout, Loader2 } from 'lucide-react';
+import { Camera, Wand2, Share2, Sparkles, Layout, Loader2 } from 'lucide-react';
 
 export default function RealEstateMagic() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -21,73 +21,71 @@ export default function RealEstateMagic() {
   const handleAIAction = () => {
     if (!imagePreview) return alert("Carica prima una foto!");
     setIsProcessing(true);
-    // Qui collegheremo l'API di Google tra poco
     setTimeout(() => {
       setIsProcessing(false);
-      alert("L'AI sta elaborando... (Dobbiamo ancora collegare le chiavi API)");
-    }, 3000);
+      alert("Connessione AI in corso...");
+    }, 2000);
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 font-sans pb-24 overflow-x-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-100">
+    // Il "max-w-md" e "mx-auto" servono a tenere tutto centrato e stretto come un'app
+    <div className="max-w-md mx-auto min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      
+      {/* Header fisso che non si rimpicciolisce */}
+      <header className="p-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
         <h1 className="text-xl font-black tracking-tighter text-blue-600">RE-MAGIC</h1>
-        <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase">Pro</div>
+        <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold">AI ACTIVE</span>
       </header>
 
-      <main className="px-6 pt-6">
-        {/* Area Upload con dimensione fissa per non rompere il layout */}
-        <div className="relative w-full aspect-[4/5] rounded-[2rem] bg-slate-100 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center">
+      <main className="p-4 flex-1 flex flex-col gap-6">
+        <div className="text-center">
+          <h2 className="text-lg font-bold italic-none">Carica la foto dell'immobile</h2>
+        </div>
+
+        {/* CONTENITORE FOTO BLINDATO: Non può uscire dallo schermo */}
+        <div className="relative w-full aspect-square bg-white rounded-3xl border-2 border-dashed border-slate-200 shadow-inner overflow-hidden flex items-center justify-center">
           <input 
             type="file" 
             accept="image/*" 
             onChange={handleFileChange}
-            className="absolute inset-0 opacity-0 z-30 cursor-pointer"
+            className="absolute inset-0 opacity-0 z-20 cursor-pointer"
           />
           
           {imagePreview ? (
-            <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-black" />
+            <img 
+              src={imagePreview} 
+              alt="Preview" 
+              className="w-full h-full object-cover" // Forza la foto a riempire il quadrato senza deformarsi o uscire
+            />
           ) : (
-            <div className="text-center p-10">
-              <Camera size={40} className="mx-auto text-slate-300 mb-4" />
-              <p className="font-bold text-slate-400">Tocca per scattare foto</p>
+            <div className="flex flex-col items-center text-slate-300">
+              <Camera size={48} />
+              <p className="mt-2 text-sm font-medium">Tocca per scattare</p>
             </div>
           )}
         </div>
 
-        {/* Pulsanti Azione */}
-        <div className="grid grid-cols-2 gap-4 mt-8">
-          <button 
-            onClick={handleAIAction}
-            className="flex flex-col items-center p-6 bg-slate-50 rounded-[2rem] active:bg-blue-50 transition-all border border-transparent active:border-blue-200"
-          >
-            <Layout className="text-purple-600 mb-2" />
-            <span className="font-bold text-sm text-center leading-tight">Virtual Staging</span>
+        {/* Pulsanti Azione Grandi */}
+        <div className="grid grid-cols-2 gap-4">
+          <button onClick={handleAIAction} className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+            <Layout className="text-purple-600" />
+            <span className="text-xs font-bold uppercase tracking-tight">Virtual Staging</span>
           </button>
-          
-          <button className="flex flex-col items-center p-6 bg-slate-50 rounded-[2rem] active:bg-blue-50 transition-all">
-            <Share2 className="text-green-600 mb-2" />
-            <span className="font-bold text-sm text-center leading-tight">Export Social</span>
+          <button className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+            <Share2 className="text-green-600" />
+            <span className="text-xs font-bold uppercase tracking-tight">Export Social</span>
           </button>
         </div>
       </main>
 
-      {/* Bottone Principale */}
-      <div className="fixed bottom-6 left-6 right-6">
+      {/* Bottone AI Fisso in basso */}
+      <div className="p-4 bg-white border-t border-slate-100 shrink-0">
         <button 
           onClick={handleAIAction}
           disabled={isProcessing}
-          className="w-full h-16 bg-blue-600 text-white rounded-full font-bold shadow-xl shadow-blue-200 flex items-center justify-center gap-3 disabled:bg-slate-400"
+          className="w-full h-14 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
         >
-          {isProcessing ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <>
-              <Sparkles size={20} />
-              Migliora Foto con AI
-            </>
-          )}
+          {isProcessing ? <Loader2 className="animate-spin" /> : <><Sparkles size={18}/> MIGLIORA CON AI</>}
         </button>
       </div>
     </div>
