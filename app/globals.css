@@ -17,3 +17,13 @@ body {
 button {
   touch-action: manipulation;
 }
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+body {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
