@@ -19,7 +19,7 @@ export default function RealEstateMagic() {
         <input 
           type="file" 
           accept="image/*" 
-          capture="environment" 
+          accept="image/*"
           className="absolute inset-0 opacity-0 z-10 cursor-pointer"
         />
         <div className="bg-blue-50 p-5 rounded-full mb-4">
