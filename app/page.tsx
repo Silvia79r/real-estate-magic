@@ -1,18 +1,15 @@
 "use client";
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Sparkles, Share2, Layout, Menu, CreditCard, Video, X, PlayCircle, Loader2, CheckCircle, Smartphone } from 'lucide-react';
+import { Camera, Image as ImageIcon, Sparkles, Share2, Layout, Menu, CreditCard, Video, X, PlayCircle, Loader2, CheckCircle, Smartphone, ShoppingCart, ArrowLeft } from 'lucide-react';
 
 export default function RealEstateApp() {
-  const [activeTab, setActiveTab] = useState<'home' | 'photo' | 'video360'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'photo' | 'video360' | 'staging' | 'social' | 'shop'>('home');
   const [isProcessing, setIsProcessing] = useState(false);
   const [credits, setCredits] = useState(12);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
 
-  // Funzione per simulare l'AI
   const startAiMagic = () => {
-    if (credits <= 0) return alert("Crediti esauriti!");
+    if (credits <= 0) return setActiveTab('shop');
     setIsProcessing(true);
     setIsDone(false);
     setTimeout(() => {
@@ -23,7 +20,6 @@ export default function RealEstateApp() {
     }, 3500);
   };
 
-  // Componente per i pulsanti della Dashboard
   const MenuButton = ({ icon: Icon, label, sub, color, tab }: any) => (
     <button 
       onClick={() => setActiveTab(tab)}
@@ -41,96 +37,91 @@ export default function RealEstateApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      {/* HEADER */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-50">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('home')}>
             <Sparkles className="text-blue-600 w-6 h-6" />
             <h1 className="font-black text-xl tracking-tighter text-blue-600 italic uppercase">RE-MAGIC</h1>
           </div>
-          <div className="bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2 border border-blue-100">
+          <button onClick={() => setActiveTab('shop')} className="bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2 border border-blue-100 active:scale-95 transition-transform">
             <CreditCard className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-bold text-blue-700">{credits}</span>
-          </div>
+          </button>
         </div>
       </header>
 
       <main className="flex-1 p-4 max-w-md mx-auto w-full">
-        {activeTab === 'home' ? (
-          /* DASHBOARD PRINCIPALE */
+        {activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="py-4 text-center">
               <h2 className="text-2xl font-black text-slate-800 leading-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
             </div>
-            
             <div className="grid grid-cols-2 gap-4">
-              <MenuButton icon={ImageIcon} label="Migliora Foto" sub="Luci e Prospettiva AI" color="bg-blue-500" tab="photo" />
-              <MenuButton icon={Layout} label="Arreda Stanza" sub="Virtual Staging" color="bg-indigo-500" tab="photo" />
-              <MenuButton icon={Video} label="Video 360" sub="Tour Interattivi" color="bg-purple-500" tab="video360" />
-              <MenuButton icon={Share2} label="Post Social" sub="Grafica e Testi" color="bg-emerald-500" tab="home" />
+              <MenuButton icon={ImageIcon} label="Migliora Foto" sub="Luci e Prospettiva" color="bg-blue-500" tab="photo" />
+              <MenuButton icon={Layout} label="Arreda Stanza" sub="Virtual Staging" color="bg-indigo-500" tab="staging" />
+              <MenuButton icon={Video} label="Video 360" sub="Tour Interattivo" color="bg-purple-500" tab="video360" />
+              <MenuButton icon={Share2} label="Post Social" sub="Grafica e Testi" color="bg-emerald-500" tab="social" />
             </div>
-
-            <div className="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden">
-               <div className="relative z-10">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Novità</p>
-                 <h3 className="text-lg font-bold mb-3">Rimuovi Oggetti AI</h3>
-                 <p className="text-xs opacity-90 leading-relaxed">Cancella disordine o vecchi mobili dalle foto in un tocco.</p>
-               </div>
-               <Smartphone className="absolute -right-4 -bottom-4 w-24 h-24 opacity-20 rotate-12" />
+            <div onClick={() => setActiveTab('shop')} className="bg-slate-900 p-6 rounded-[2.5rem] text-white shadow-xl cursor-pointer">
+               <h3 className="text-lg font-bold">I tuoi crediti stanno finendo?</h3>
+               <p className="text-xs opacity-70 mt-1">Ricarica ora per non fermare il tuo lavoro.</p>
             </div>
           </div>
-        ) : (
-          /* SEZIONE DI CARICAMENTO INTERNA */
+        )}
+
+        {(activeTab === 'photo' || activeTab === 'staging' || activeTab === 'video360' || activeTab === 'social') && (
           <div className="space-y-6 animate-in slide-in-from-bottom-4">
             <button onClick={() => setActiveTab('home')} className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-              ← Torna alla Dashboard
+              <ArrowLeft className="w-3 h-3" /> Torna alla Dashboard
             </button>
-
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
-              <div className="mb-6">
-                <h3 className="font-bold text-lg">{activeTab === 'photo' ? 'Migliora le tue foto' : 'Crea il Tour 360°'}</h3>
-                <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-3">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">!</div>
-                  <p className="text-[11px] text-slate-500 leading-tight italic">
-                    {activeTab === 'photo' 
-                      ? "L'AI correggerà esposizione, colori e raddrizzerà automaticamente la prospettiva delle pareti."
-                      : "Carica un video MP4 girato al centro della stanza. Tieni lo smartphone ad altezza occhi."}
-                  </p>
-                </div>
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 text-center">
+              <h3 className="font-black uppercase text-sm tracking-widest mb-4">
+                {activeTab === 'photo' && "Migliora Foto"}
+                {activeTab === 'staging' && "Virtual Staging"}
+                {activeTab === 'video360' && "Tour 360°"}
+                {activeTab === 'social' && "Generatore Post"}
+              </h3>
+              <div className="mb-6 p-4 bg-blue-50 rounded-2xl text-left border border-blue-100">
+                <p className="text-[11px] text-blue-700 leading-relaxed italic">
+                  {activeTab === 'photo' && "💡 L'AI bilancerà le luci e raddrizzerà le linee cadenti delle pareti per foto professionali."}
+                  {activeTab === 'staging' && "💡 Carica una stanza vuota: l'AI inserirà mobili moderni seguendo lo stile dell'immobile."}
+                  {activeTab === 'video360' && "💡 Carica il video MP4. L'AI creerà un ambiente navigabile e luminoso."}
+                  {activeTab === 'social' && "💡 Inserisci i dati dell'immobile: genereremo una descrizione accattivante e una grafica per Instagram."}
+                </p>
               </div>
-
-              <div 
-                className="aspect-[4/5] border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden mb-6 cursor-pointer"
-                onClick={() => document.getElementById(activeTab === 'photo' ? 'file-upload' : 'video-upload')?.click()}
-              >
-                {isProcessing ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-                    <p className="text-blue-600 font-bold uppercase tracking-widest text-[10px]">L'AI sta lavorando...</p>
-                  </div>
-                ) : isDone ? (
-                  <div className="flex flex-col items-center gap-4 text-emerald-500">
-                    <CheckCircle className="w-16 h-16" />
-                    <p className="font-bold text-sm">Completato!</p>
-                  </div>
-                ) : (
-                  <div className="text-center p-6">
-                    <Camera className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tocca per caricare</p>
-                  </div>
-                )}
-                <input id="file-upload" type="file" multiple className="hidden" accept="image/*" onChange={(e) => setSelectedImage(e.target.files?.[0] ? URL.createObjectURL(e.target.files[0]) : null)} />
-                <input id="video-upload" type="file" className="hidden" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] ? URL.createObjectURL(e.target.files[0]) : null)} />
+              <div className="aspect-square border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center mb-6 overflow-hidden">
+                {isProcessing ? <Loader2 className="w-10 h-10 text-blue-600 animate-spin" /> : isDone ? <CheckCircle className="w-12 h-12 text-emerald-500" /> : <Camera className="w-10 h-10 text-slate-200" />}
               </div>
-
-              <button 
-                onClick={startAiMagic}
-                className="w-full bg-blue-600 text-white py-5 rounded-3xl font-black shadow-lg shadow-blue-50 flex items-center justify-center gap-3 active:scale-95 transition-all"
-              >
-                <Sparkles className="w-6 h-6" />
-                <span>AVVIA MAGIA AI</span>
+              <button onClick={startAiMagic} className="w-full bg-blue-600 text-white py-5 rounded-3xl font-black shadow-lg flex items-center justify-center gap-2">
+                <Sparkles className="w-5 h-5" /> {isProcessing ? "ELABORAZIONE..." : "AVVIA MAGIA"}
               </button>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'shop' && (
+          <div className="space-y-6 animate-in fade-in">
+            <button onClick={() => setActiveTab('home')} className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+              <ArrowLeft className="w-3 h-3" /> Chiudi Negozio
+            </button>
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-black italic text-blue-600 uppercase">Ricarica Crediti</h2>
+              <p className="text-xs text-slate-400 mt-1">Scegli il pacchetto più adatto alle tue vendite</p>
+            </div>
+            {[
+              { title: "Starter", qty: "10 Crediti", price: "9,90€", desc: "Ideale per un singolo appartamento" },
+              { title: "Pro", qty: "50 Crediti", price: "39,90€", desc: "Per agenti attivi ogni giorno", hot: true },
+              { title: "Agency", qty: "200 Crediti", price: "99,90€", desc: "La scelta migliore per il tuo team" }
+            ].map((pkg, i) => (
+              <div key={i} className={`p-6 rounded-[2.5rem] border-2 transition-all ${pkg.hot ? 'border-blue-600 bg-blue-600 text-white' : 'border-white bg-white'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-black uppercase tracking-tighter text-lg">{pkg.qty}</h4>
+                  <span className="font-bold">{pkg.price}</span>
+                </div>
+                <p className={`text-[10px] mb-4 ${pkg.hot ? 'opacity-80' : 'text-slate-400'}`}>{pkg.desc}</p>
+                <button className={`w-full py-3 rounded-2xl font-bold text-xs uppercase ${pkg.hot ? 'bg-white text-blue-600' : 'bg-slate-900 text-white'}`}>Acquista</button>
+              </div>
+            ))}
           </div>
         )}
       </main>
