@@ -80,17 +80,22 @@ export default function RealEstateMagic() {
             <div className="relative flex-1 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 overflow-hidden group/upload transition-all hover:border-blue-400">
               <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 z-50 cursor-pointer" />
               
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover animate-in fade-in zoom-in duration-500" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 group-hover/upload:scale-110 transition-transform duration-500">
-                    <Camera size={32} className="text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Trascina o scatta</h3>
-                  <p className="text-slate-400 text-sm">Formati supportati: JPG, PNG, HEIC</p>
-                </div>
-              )}
+              {imagePreview && (
+  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <img 
+      src={imagePreview} 
+      alt="Preview" 
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        objectFit: 'cover', 
+        position: 'absolute',
+        top: 0,
+        left: 0
+      }} 
+    />
+  </div>
+)}
             </div>
 
             {/* Azioni Pro */}
