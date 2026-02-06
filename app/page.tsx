@@ -24,7 +24,7 @@ export default function RealEstateMagic() {
         backgroundColor: 'white', 
         borderBottom: '1px solid #eee' 
       }}>
-        <h1 style={{ color: '#2563eb', margin: 0, fontWeight: 900 }}>RE-MAGIC</h1>
+        <h1 style={{ color: '#2563eb', margin: 0, fontWeight: 900 }}>RE-MAGIC funziona</h1>
         <div style={{ backgroundColor: '#2563eb', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' }}>PRO</div>
       </header>
 
