@@ -1,1 +1,9 @@
-body { background: white; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #f8fafc; /* Uno sfondo grigio chiarissimo professionale */
+  margin: 0;
+  padding: 0;
+}
