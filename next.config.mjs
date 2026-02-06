@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Rimuoviamo la configurazione i18n per ora per sbloccare il 404
+  output: 'export', // Questo comando crea la cartella 'out' che hai impostato
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'storage.googleapis.com' },
-    ],
+    unoptimized: true, // Necessario per far funzionare le immagini nella cartella 'out'
   },
 };
 
