@@ -21,6 +21,15 @@ export default function RealEstateApp() {
     }
   };
 
+  // CORREZIONE: Ora questa funzione accetta video correttamente
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoFile(URL.createObjectURL(file));
+      setIsDone(false);
+    }
+  };
+
   const startAiMagic = () => {
     if (credits <= 0) return alert("Crediti esauriti!");
     setIsProcessing(true);
@@ -71,39 +80,56 @@ export default function RealEstateApp() {
                 <Video className="w-6 h-6" /> <span className="font-semibold">Tour 360°</span>
               </button>
             </nav>
-            <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold">Compra Crediti</button>
           </div>
         </div>
       )}
 
       <main className="flex-1 p-4 max-w-md mx-auto w-full">
         <div className="bg-white p-4 rounded-[2.5rem] shadow-sm border border-slate-100 mb-6">
-          <div className="aspect-[4/5] border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden">
+          <div 
+            className="aspect-[4/5] border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden cursor-pointer"
+            onClick={() => document.getElementById(activeTab === 'photo' ? 'file-upload' : 'video-upload')?.click()}
+          >
             {isProcessing ? (
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-                <p className="text-blue-600 font-bold uppercase tracking-widest text-[10px]">L'AI sta creando la magia...</p>
+                <p className="text-blue-600 font-bold uppercase tracking-widest text-[10px]">L'AI sta elaborando...</p>
               </div>
             ) : isDone ? (
               <div className="flex flex-col items-center gap-4 text-emerald-500">
                 <CheckCircle className="w-16 h-16" />
-                <p className="font-bold text-sm">Elaborazione Completata!</p>
+                <p className="font-bold text-sm text-center">Operazione completata!<br/>Credito scalato.</p>
               </div>
-            ) : selectedImage ? (
-              <img src={selectedImage} alt="Preview" className="w-full h-full object-cover rounded-[1.8rem]" />
+            ) : activeTab === 'photo' ? (
+              selectedImage ? (
+                <img src={selectedImage} alt="Preview" className="w-full h-full object-cover rounded-[1.8rem]" />
+              ) : (
+                <div className="text-center p-6">
+                  <Camera className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600 font-bold uppercase text-[10px]">Carica Foto</p>
+                </div>
+              )
             ) : (
-              <div className="text-center p-6 cursor-pointer" onClick={() => document.getElementById('file-upload')?.click()}>
-                <Camera className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-600 font-bold uppercase text-[10px]">Carica l'immobile</p>
-                <input id="file-upload" type="file" multiple className="hidden" accept="image/*" onChange={handleUpload} />
-              </div>
+              videoFile ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 rounded-[1.8rem]">
+                   <PlayCircle className="w-16 h-16 text-white opacity-50" />
+                   <p className="text-white text-xs mt-4">Video 360 Pronto</p>
+                </div>
+              ) : (
+                <div className="text-center p-6">
+                  <PlayCircle className="w-10 h-10 text-blue-500 mx-auto mb-4" />
+                  <p className="text-slate-600 font-bold uppercase text-[10px]">Carica Video MP4</p>
+                </div>
+              )
             )}
+            <input id="file-upload" type="file" multiple className="hidden" accept="image/*" onChange={handleUpload} />
+            <input id="video-upload" type="file" className="hidden" accept="video/mp4,video/x-m4v,video/*" onChange={handleVideoUpload} />
           </div>
         </div>
 
         <button 
           onClick={startAiMagic}
-          disabled={isProcessing || (!selectedImage && !videoFile)}
+          disabled={isProcessing || (activeTab === 'photo' ? !selectedImage : !videoFile)}
           className={`w-full py-6 rounded-[2rem] font-black shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 ${
             isProcessing ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white'
           }`}
