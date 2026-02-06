@@ -1,69 +1,103 @@
 'use client';
 
-import React, { useState, ChangeEvent } from 'react';
-import { Camera, Wand2, Share2, Sparkles, Layout } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Sparkles, Layout, Share2 } from 'lucide-react';
 
 export default function RealEstateMagic() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    // STILE INLINE: Questo funziona anche se Tailwind è rotto
-    <div style={{ maxWidth: '500px', margin: '0 auto', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'sans-serif', paddingBottom: '100px' }}>
-      
-      <header style={{ backgroundColor: 'white', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', sticky: 'top' }}>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#2563eb', letterSpacing: '-1px' }}>RE-MAGIC</h1>
-        <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold' }}>PRO</div>
+    <div style={{ 
+      fontFamily: 'sans-serif', 
+      maxWidth: '450px', 
+      margin: '0 auto', 
+      backgroundColor: '#f8fafc', 
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Header */}
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        padding: '20px', 
+        backgroundColor: 'white', 
+        borderBottom: '1px solid #eee' 
+      }}>
+        <h1 style={{ color: '#2563eb', margin: 0, fontWeight: 900 }}>RE-MAGIC</h1>
+        <div style={{ backgroundColor: '#2563eb', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' }}>PRO</div>
       </header>
 
-      <main style={{ padding: '20px' }}>
-        <div style={{ marginBottom: '25px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>Trasforma il tuo immobile</h2>
-          <p style={{ color: '#64748b', fontSize: '14px' }}>Carica una foto e arreda con l'AI</p>
-        </div>
+      {/* Main Content */}
+      <main style={{ padding: '20px', flex: 1 }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Carica la foto</h2>
 
-        {/* CONTENITORE FOTO: Questo blocca la foto gigante */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', backgroundColor: 'white', borderRadius: '30px', border: '2px dashed #cbd5e1', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* CONTENITORE FOTO: Questo non può fallire */}
+        <div style={{ 
+          width: '100%', 
+          aspectRatio: '1/1', 
+          backgroundColor: 'white', 
+          borderRadius: '24px', 
+          border: '2px dashed #ccc', 
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
           <input 
             type="file" 
             accept="image/*" 
-            onChange={handleFileChange} 
-            style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 10, cursor: 'pointer' }} 
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => setImagePreview(reader.result as string);
+                reader.readAsDataURL(file);
+              }
+            }}
+            style={{ position: 'absolute', inset: 0, opacity: 0, zIndex: 10, cursor: 'pointer' }}
           />
           
           {imagePreview ? (
-            <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={imagePreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
-              <Camera size={48} style={{ marginBottom: '10px' }} />
-              <p style={{ margin: 0, fontWeight: 'bold' }}>Tocca per iniziare</p>
+            <div style={{ color: '#ccc', textAlign: 'center' }}>
+              <Camera size={40} />
+              <p>Tocca per scattare</p>
             </div>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '30px' }}>
-          <button style={{ padding: '20px', backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-            <Layout size={24} color="#9333ea" />
-            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>STAGING</span>
-          </button>
-          <button style={{ padding: '20px', backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-            <Share2 size={24} color="#16a34a" />
-            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>SOCIAL</span>
-          </button>
+        {/* Pulsanti */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+          <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '20px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+            <Layout style={{ color: '#8b5cf6' }} />
+            <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '5px' }}>STAGING</div>
+          </div>
+          <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '20px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+            <Share2 style={{ color: '#10b981' }} />
+            <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '5px' }}>SOCIAL</div>
+          </div>
         </div>
       </main>
 
-      {/* BOTTONE FISSO IN BASSO */}
-      <div style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', maxWidth: '460px', margin: '0 auto' }}>
-        <button style={{ width: '100%', height: '60px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)' }}>
+      {/* Bottone Finale */}
+      <div style={{ padding: '20px' }}>
+        <button style={{ 
+          width: '100%', 
+          padding: '15px', 
+          backgroundColor: '#2563eb', 
+          color: 'white', 
+          border: 'none', 
+          borderRadius: '15px', 
+          fontWeight: 'bold',
+          fontSize: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px'
+        }}>
           <Sparkles size={20} /> MIGLIORA CON AI
         </button>
       </div>
