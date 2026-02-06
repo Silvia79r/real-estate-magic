@@ -1,14 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Supporto multilingua nativo
-  i18n: {
-    locales: ['it', 'en', 'de', 'fr'],
-    defaultLocale: 'it',
-  },
+  // Rimuoviamo la configurazione i18n per ora per sbloccare il 404
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'storage.googleapis.com' },
-      { protocol: 'https', hostname: 'files.stripe.com' },
     ],
   },
 };
