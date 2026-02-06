@@ -1,9 +1,22 @@
-'use client'; 
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { Camera, Wand2, Share2, CreditCard } from 'lucide-react';
 
 export default function RealEstateMagic() {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4">
       {/* Header */}
@@ -14,19 +27,30 @@ export default function RealEstateMagic() {
         </div>
       </header>
 
-      {/* Upload Area (Mobile Optimized) */}
+      {/* Upload Area */}
       <div className="w-full aspect-square border-2 border-dashed border-blue-200 rounded-3xl bg-white flex flex-col items-center justify-center p-6 text-center shadow-xl active:scale-[0.98] transition-all relative overflow-hidden">
         <input 
           type="file" 
           accept="image/*" 
-          accept="image/*"
+          onChange={handleFileChange}
           className="absolute inset-0 opacity-0 z-10 cursor-pointer"
         />
-        <div className="bg-blue-50 p-5 rounded-full mb-4">
-          <Camera size={48} className="text-blue-500" />
-        </div>
-        <h3 className="text-lg font-bold uppercase tracking-wide">Scatta o Carica Foto</h3>
-        <p className="text-slate-400 text-sm mt-2">Correzione prospettica automatica attiva</p>
+        
+        {imagePreview ? (
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <>
+            <div className="bg-blue-50 p-5 rounded-full mb-4">
+              <Camera size={48} className="text-blue-500" />
+            </div>
+            <h3 className="text-lg font-bold uppercase tracking-wide">Scatta o Carica Foto</h3>
+            <p className="text-slate-400 text-sm mt-2">Tocca per iniziare</p>
+          </>
+        )}
       </div>
 
       {/* AI Action Menu */}
