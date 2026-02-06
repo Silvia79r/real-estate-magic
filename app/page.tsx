@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Sparkles, Share2, Layout, Menu, CreditCard, Video, X, PlayCircle, Loader2, CheckCircle, Smartphone, ShoppingCart, ArrowLeft, Download, ArrowRight } from 'lucide-react';
+import { Camera, Image as ImageIcon, Sparkles, CreditCard, Video, X, Loader2, CheckCircle, Smartphone, ArrowLeft, Download, Layout, Share2 } from 'lucide-react';
 
 export default function RealEstateApp() {
   const [activeTab, setActiveTab] = useState<'home' | 'photo' | 'video360' | 'staging' | 'social' | 'shop'>('home');
@@ -24,7 +24,7 @@ export default function RealEstateApp() {
       onClick={() => setActiveTab(tab)}
       className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-4 hover:shadow-md transition-all active:scale-95 text-center w-full"
     >
-      <div className={`w-16 h-16 ${color} rounded-2xl flex items-center justify-center mb-1 shadow-lg shadow-slate-100`}>
+      <div className={`w-16 h-16 ${color} rounded-2xl flex items-center justify-center mb-1 shadow-lg`}>
         <Icon className="w-10 h-10 text-white" />
       </div>
       <div>
@@ -42,7 +42,7 @@ export default function RealEstateApp() {
             <Sparkles className="text-blue-600 w-7 h-7" />
             <h1 className="font-black text-2xl tracking-tighter text-blue-600 italic uppercase">RE-MAGIC</h1>
           </div>
-          <button onClick={() => setActiveTab('shop')} className="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-2 border border-blue-100 active:scale-95">
+          <button onClick={() => setActiveTab('shop')} className="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-2 border border-blue-100">
             <CreditCard className="w-5 h-5 text-blue-600" />
             <span className="text-lg font-black text-blue-700">{credits}</span>
           </button>
@@ -50,10 +50,10 @@ export default function RealEstateApp() {
       </header>
 
       <main className="flex-1 p-5 max-w-md mx-auto w-full">
-        {activeTab === 'home' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
+        {activeTab === 'home' ? (
+          <div className="space-y-8">
             <div className="py-6 text-center">
-              <h2 className="text-3xl font-black text-slate-800 leading-tight tracking-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
+              <h2 className="text-3xl font-black text-slate-800 leading-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
             </div>
             <div className="grid grid-cols-2 gap-5">
               <MenuButton icon={ImageIcon} label="Foto AI" sub="Luci e Prospettiva" color="bg-blue-500" tab="photo" />
@@ -61,86 +61,51 @@ export default function RealEstateApp() {
               <MenuButton icon={Video} label="Video 360" sub="Tour Virtuale" color="bg-purple-500" tab="video360" />
               <MenuButton icon={Share2} label="Social" sub="Post e Grafiche" color="bg-emerald-500" tab="social" />
             </div>
-            <div onClick={() => setActiveTab('shop')} className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl cursor-pointer">
-               <h3 className="text-xl font-black mb-2 uppercase tracking-tight italic tracking-widest">Ricarica Crediti</h3>
-               <p className="text-sm opacity-80 leading-relaxed font-medium tracking-tight">Abbonamenti e pacchetti per il tuo team.</p>
-            </div>
           </div>
-        )}
-
-        {(activeTab === 'photo' || activeTab === 'staging' || activeTab === 'video360' || activeTab === 'social') && (
-          <div className="space-y-6 animate-in slide-in-from-bottom-6">
+        ) : activeTab === 'shop' ? (
+          <div className="space-y-8">
+            <button onClick={() => setActiveTab('home')} className="flex items-center gap-3 text-slate-500 font-black text-sm uppercase tracking-widest py-2">
+              <ArrowLeft className="w-5 h-5" /> Chiudi
+            </button>
+            <div className="text-center">
+              <h2 className="text-3xl font-black italic text-blue-600 uppercase tracking-tighter">Pacchetti Crediti</h2>
+            </div>
+            {[
+              { title: "Starter", qty: "10 Crediti", price: "9,90€", desc: "Ideale per un singolo immobile", color: "bg-white" },
+              { title: "Pro", qty: "50 Crediti", price: "39,90€", desc: "Per agenti attivi ogni giorno", color: "bg-blue-600", text: "text-white" }
+            ].map((pkg, i) => (
+              <div key={i} className={`p-8 rounded-[3rem] border-4 ${pkg.color} ${pkg.text || 'text-slate-900'} shadow-md`}>
+                <div className="flex justify-between items-center mb-2 font-black text-2xl italic">
+                  <h4>{pkg.qty}</h4>
+                  <span>{pkg.price}</span>
+                </div>
+                <button className="w-full mt-4 py-5 rounded-[1.5rem] font-black text-sm uppercase bg-slate-900 text-white">Acquista</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">
             <button onClick={() => {setActiveTab('home'); setIsDone(false);}} className="flex items-center gap-3 text-slate-500 font-black text-sm uppercase tracking-widest py-2">
               <ArrowLeft className="w-5 h-5" /> Indietro
             </button>
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 text-center">
-              
               {!isDone ? (
                 <>
-                  <h3 className="font-black uppercase text-lg tracking-widest mb-6 text-blue-600 italic">
-                    {activeTab === 'photo' && "Migliora Foto"}
-                    {activeTab === 'staging' && "Virtual Staging"}
-                    {activeTab === 'video360' && "Tour 360°"}
-                    {activeTab === 'social' && "Generatore Post"}
-                  </h3>
-                  
-                  <div className="mb-8 p-6 bg-blue-50 rounded-3xl text-left border border-blue-100 shadow-sm">
+                  <div className="mb-8 p-6 bg-blue-50 rounded-3xl text-left border border-blue-100">
                     <p className="text-[15px] text-blue-800 leading-snug font-bold italic">
-                      {activeTab === 'photo' && "💡 L'AI bilancerà le luci e raddrizzerà le pareti storte per te."}
-                      {activeTab === 'staging' && "💡 Carica una stanza vuota. L'AI inserirà mobili moderni in pochi secondi."}
-                      {activeTab === 'video360' && "💡 Carica un video MP4. L'AI creerà un tour navigabile e luminoso."}
-                      {activeTab === 'social' && "💡 Crea descrizioni accattivanti e grafiche per i tuoi canali social."}
+                      {activeTab === 'photo' && "💡 Correzione luci e prospettiva pareti."}
+                      {activeTab === 'staging' && "💡 Inserimento mobili moderni AI."}
+                      {activeTab === 'video360' && "💡 Trasforma MP4 in tour interattivo."}
+                      {activeTab === 'social' && "💡 Genera testi e grafiche social."}
                     </p>
                   </div>
-
-                  <div className="aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8 overflow-hidden shadow-inner">
+                  <div className="aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8">
                     {isProcessing ? <Loader2 className="w-14 h-14 text-blue-600 animate-spin" /> : <Camera className="w-14 h-14 text-slate-200" />}
                   </div>
-                  
-                  <button onClick={startAiMagic} className="w-full bg-blue-600 text-white py-7 rounded-[2rem] font-black text-lg shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-4">
+                  <button onClick={startAiMagic} className="w-full bg-blue-600 text-white py-7 rounded-[2rem] font-black text-lg shadow-xl flex items-center justify-center gap-4">
                     <Sparkles className="w-7 h-7" /> {isProcessing ? "ELABORAZIONE..." : "AVVIA MAGIA"}
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                  <div className="bg-emerald-100 p-5 rounded-full mb-4">
-                    <CheckCircle className="w-12 h-12 text-emerald-500" />
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter mb-8">Risultato Pronto!</h3>
-                  
-                  <div className="space-y-4 w-full">
-                    {/* DOWNLOAD 1 */}
-                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between group active:scale-95 transition-all shadow-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-white/10 p-3 rounded-xl">
-                          <ImageIcon className="w-6 h-6 text-blue-400" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-black text-sm tracking-tight">FORMATO PORTALI</p>
-                          <p className="text-[10px] opacity-60 font-bold">Orizzontale 4:3 ottimizzato</p>
-                        </div>
-                      </div>
-                      <Download className="w-6 h-6 text-blue-400" />
-                    </button>
-
-                    {/* DOWNLOAD 2 */}
-                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between group active:scale-95 transition-all shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-purple-50 p-3 rounded-xl">
-                          <Smartphone className="w-6 h-6 text-purple-500" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-black text-sm tracking-tight">FORMATO SOCIAL</p>
-                          <p className="text-[10px] text-slate-400 font-bold">Verticale 4:5 per Instagram</p>
-                        </div>
-                      </div>
-                      <Download className="w-6 h-6 text-purple-500" />
-                    </button>
-                  </div>
-
-                  <button onClick={() => {setIsDone(false);}} className="mt-10 text-slate-400 font-black text-xs uppercase tracking-widest border-b-2 border-slate-200 pb-1">
-                    Elabora un'altra foto
-                  </button>
-                </div>
-              )}
-            </div>
+                <div className="flex flex-col items-center animate-in zoom-in">
+                  <div className
