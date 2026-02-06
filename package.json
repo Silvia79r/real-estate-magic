@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "next": "15.1.7",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "lucide-react": "^0.474.0",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.2"
