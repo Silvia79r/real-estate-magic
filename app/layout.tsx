@@ -1,20 +1,25 @@
-import './globals.css'; // <--- QUESTA RIGA È FONDAMENTALE
-import type { Metadata } from 'next';
+import './globals.css';
+import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
   title: 'RealEstateMagic AI',
   description: 'AI-Powered Real Estate Marketing',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
+  appleWebApp: { title: 'RE-Magic', statusBarStyle: 'black-translucent', capable: true },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Impedisce alle scritte di rimpicciolirsi o ballare
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it">
-      <body>{children}</body>
+    <html lang="it" className="antialiased">
+      <body className="bg-slate-50 overflow-x-hidden selection:bg-blue-100 italic-none">
+        {children}
+      </body>
     </html>
   );
 }
