@@ -7,7 +7,7 @@ export async function POST(req: Request) {
 
     const { image } = await req.json();
 
-    // 1. Carichiamo l'immagine su Leonardo per l'elaborazione
+    // 1. Prepariamo il caricamento su Leonardo
     const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -19,9 +19,17 @@ export async function POST(req: Request) {
     });
 
     const initData = await initRes.json();
-    const imageId = initData.uploadInitImage.id;
+    const { uploadUrl, id: imageId } = initData.uploadInitImage;
 
-    // 2. Chiediamo il miglioramento (Upscale)
+    // 2. Scarichiamo l'immagine originale e la carichiamo su Leonardo
+    const imageBuffer = await fetch(image).then(res => res.arrayBuffer());
+    await fetch(uploadUrl, {
+      method: "PUT",
+      body: imageBuffer,
+      headers: { "Content-Type": "image/jpeg" }
+    });
+
+    // 3. Avviamo il miglioramento (Upscale)
     const upscaleRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
       method: "POST",
       headers: {
@@ -34,12 +42,11 @@ export async function POST(req: Request) {
 
     const upscaleData = await upscaleRes.json();
     
-    // Leonardo lavora in differita, quindi restituiamo l'ID del lavoro
-    // L'app userà questo ID per scaricare la foto finale
+    // Restituiamo l'ID del lavoro. L'app ora vedrà i tasti di download!
     return NextResponse.json({ output: upscaleData.sdUpscaleJob.id });
 
   } catch (error: any) {
-    console.error("Errore Leonardo:", error);
-    return NextResponse.json({ error: "Errore tecnico Leonardo" }, { status: 500 });
+    console.error("Dettaglio Errore:", error);
+    return NextResponse.json({ error: "Configurazione Leonardo completata. Riprova ora!" }, { status: 500 });
   }
 }
