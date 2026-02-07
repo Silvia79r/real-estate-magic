@@ -7,23 +7,38 @@ export async function POST(req: Request) {
 
     const { image } = await req.json();
 
-    // 1. Chiediamo a Leonardo di migliorare l'immagine (Upscale)
-    const response = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
+    // STEP 1: Chiediamo a Leonardo un permesso per caricare l'immagine
+    const getUploadUrl = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
         "accept": "application/json",
         "content-type": "application/json",
         "authorization": `Bearer ${apiKey}`
       },
-      body: JSON.stringify({ arg: { imageId: image } }) 
+      body: JSON.stringify({ extension: "jpg" })
     });
 
-    const data = await response.json();
+    const uploadData = await getUploadUrl.json();
+    const imageId = uploadData.uploadInitImage.id;
+
+    // STEP 2: Usiamo l'intelligenza di Leonardo per migliorare la foto (Upscale)
+    const upscaleResponse = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({ arg: { imageId: imageId } })
+    });
+
+    const upscaleData = await upscaleResponse.json();
     
-    // Leonardo restituisce l'immagine migliorata
-    return NextResponse.json({ output: data.sdUpscaleJob.generatedImageId });
+    // Inviamo il link finale all'app
+    return NextResponse.json({ output: upscaleData.sdUpscaleJob.id });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Errore Leonardo:", error);
+    return NextResponse.json({ error: "Errore durante l'elaborazione con Leonardo" }, { status: 500 });
   }
 }
