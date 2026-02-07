@@ -23,8 +23,10 @@ export default function RealEstateApp() {
   const startAiMagic = async () => {
     if (credits <= 0) return setActiveTab('shop');
     if (!selectedImage) return alert("Seleziona una foto!");
+    
     setIsProcessing(true);
     setIsDone(false);
+
     try {
       const response = await fetch("/api/replicate", {
         method: "POST",
@@ -62,9 +64,8 @@ export default function RealEstateApp() {
         {activeTab === 'home' ? (
           <div className="space-y-8">
             <div className="py-6 text-center">
-              <h2 className="text-3xl font-black text-slate-800 leading-tight tracking-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
+              <h2 className="text-3xl font-black text-slate-800 leading-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
             </div>
-            
             <div className="grid grid-cols-2 gap-5">
               <button onClick={() => setActiveTab('photo')} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3 hover:shadow-md transition-all active:scale-95 text-center">
                 <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg"><ImageIcon className="w-8 h-8 text-white" /></div>
@@ -83,7 +84,6 @@ export default function RealEstateApp() {
                 <div><p className="font-black text-xs uppercase text-slate-800">Social</p><p className="text-[10px] text-slate-500 font-bold uppercase opacity-60">Post Grafici</p></div>
               </button>
             </div>
-
             <div onClick={() => setActiveTab('shop')} className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl cursor-pointer active:scale-95 transition-all mt-4 text-center">
                <h3 className="text-xl font-black mb-1 uppercase tracking-tight italic text-blue-400">Ricarica Crediti</h3>
                <p className="text-sm opacity-70 leading-relaxed font-medium text-slate-300">Scegli un pacchetto professionale.</p>
@@ -109,7 +109,7 @@ export default function RealEstateApp() {
                     ) : (
                       <div className="flex flex-col items-center">
                         <Camera className="w-14 h-14 text-slate-300 mb-2" />
-                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest italic text-center underline">Tocca per scattare foto reale</p>
+                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest italic text-center underline font-bold">Tocca per scattare foto ora</p>
                       </div>
                     )}
                   </label>
@@ -124,11 +124,11 @@ export default function RealEstateApp() {
                   </div>
                   <h3 className="text-2xl font-black text-slate-800 uppercase italic mb-8 tracking-tighter">Risultato Pronto!</h3>
                   <div className="w-full space-y-4">
-                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-lg active:scale-95 transition-all">
+                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-lg">
                       <div className="flex items-center gap-4"><ImageIcon className="w-6 h-6 text-blue-400" /><span className="font-black text-sm tracking-tight uppercase tracking-widest italic">Portale (4:3)</span></div>
                       <Download className="w-6 h-6 text-blue-400" />
                     </button>
-                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between shadow-sm active:scale-95 transition-all">
+                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between shadow-sm">
                       <div className="flex items-center gap-4"><Smartphone className="w-6 h-6 text-purple-500" /><span className="font-black text-sm tracking-tight uppercase tracking-widest italic">Social (4:5)</span></div>
                       <Download className="w-6 h-6 text-purple-500" />
                     </button>
