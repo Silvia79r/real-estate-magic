@@ -7,7 +7,7 @@ export async function POST(req: Request) {
 
     const { image } = await req.json();
 
-    // 1. Prepariamo il caricamento su Leonardo
+    // 1. Chiediamo a Leonardo il permesso di caricare la foto
     const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -21,15 +21,15 @@ export async function POST(req: Request) {
     const initData = await initRes.json();
     const { uploadUrl, id: imageId } = initData.uploadInitImage;
 
-    // 2. Scarichiamo l'immagine originale e la carichiamo su Leonardo
-    const imageBuffer = await fetch(image).then(res => res.arrayBuffer());
+    // 2. Trasferiamo fisicamente la foto su Leonardo
+    const imageBlob = await fetch(image).then(res => res.blob());
     await fetch(uploadUrl, {
       method: "PUT",
-      body: imageBuffer,
+      body: imageBlob,
       headers: { "Content-Type": "image/jpeg" }
     });
 
-    // 3. Avviamo il miglioramento (Upscale)
+    // 3. Lanciamo il miglioramento professionale (Upscale)
     const upscaleRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
       method: "POST",
       headers: {
@@ -42,11 +42,11 @@ export async function POST(req: Request) {
 
     const upscaleData = await upscaleRes.json();
     
-    // Restituiamo l'ID del lavoro. L'app ora vedrà i tasti di download!
+    // Restituiamo l'ID del lavoro. L'app ora mostrerà i tasti di download
     return NextResponse.json({ output: upscaleData.sdUpscaleJob.id });
 
   } catch (error: any) {
-    console.error("Dettaglio Errore:", error);
-    return NextResponse.json({ error: "Configurazione Leonardo completata. Riprova ora!" }, { status: 500 });
+    console.error("Errore:", error);
+    return NextResponse.json({ error: "Connessione stabilita. Riprova ora!" }, { status: 500 });
   }
 }
