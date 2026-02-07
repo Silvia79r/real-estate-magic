@@ -11,12 +11,13 @@ export async function POST(req: Request) {
 
     // VERSIONE AGGIORNATA E PUBBLICA
     const output = await replicate.run(
-      "lucataco/real-vis-xl-v4.0:2458a280f21017462001a140f28e20e8b7921ba37719601662580790586e376a",
-      {
-        input: {
+      "nightmareai/real-esrgan:42fed1c4974146d7d24172ad2aa908285744133423b497184281363653f86e92",
+      { 
+        input: { 
           image: image,
-          prompt: "Professional real estate photography, high dynamic range, balanced lighting, cinematic, 8k",
-        }
+          upscale: 2,
+          face_enhance: false
+        } 
       }
     );
 
