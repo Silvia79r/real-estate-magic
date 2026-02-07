@@ -1,40 +1,29 @@
 import { NextResponse } from "next/server";
-import Replicate from "replicate";
 
 export async function POST(req: Request) {
   try {
-    const token = process.env.REPLICATE_API_TOKEN;
-    
-    if (!token) {
-      return NextResponse.json({ error: "Token mancante su Vercel" }, { status: 500 });
-    }
-
-    const replicate = new Replicate({
-      auth: token,
-    });
+    const apiKey = process.env.LEONARDO_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "Chiave Leonardo mancante" }, { status: 500 });
 
     const { image } = await req.json();
 
-    if (!image) {
-      return NextResponse.json({ error: "Nessuna immagine ricevuta" }, { status: 400 });
-    }
+    // 1. Chiediamo a Leonardo di migliorare l'immagine (Upscale)
+    const response = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({ arg: { imageId: image } }) 
+    });
 
-    // MODELLO TEST GRATUITO (GFPGAN)
-    const output = await replicate.run(
-      "tencentarc/gfpgan:9283608cc6b7c96b060721fd99956519d77f0bb371e99877f30ba4d15bb26688",
-      {
-        input: {
-          img: image,
-          upscale: 2
-        }
-      }
-    );
+    const data = await response.json();
+    
+    // Leonardo restituisce l'immagine migliorata
+    return NextResponse.json({ output: data.sdUpscaleJob.generatedImageId });
 
-    return NextResponse.json({ output });
   } catch (error: any) {
-    console.error("Errore Replicate:", error);
-    return NextResponse.json({ 
-      error: "Errore durante l'elaborazione: " + error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
