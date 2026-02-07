@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Camera, Image as ImageIcon, Sparkles, CreditCard, Video, Loader2, CheckCircle, Smartphone, ArrowLeft, Download, Layout, Share2 } from 'lucide-react';
 
 export default function RealEstateApp() {
@@ -7,23 +7,39 @@ export default function RealEstateApp() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [credits, setCredits] = useState(11);
   const [isDone, setIsDone] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // FUNZIONE CHE ATTIVA L'AI REALE
+  // 1. FUNZIONE PER APRIRE LA FOTOCAMERA/GALLERIA
+  const handleCaptureClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 2. FUNZIONE PER GESTIRE L'IMMAGINE CARICATA
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 3. FUNZIONE CHE ATTIVA L'AI
   const startAiMagic = async () => {
     if (credits <= 0) return setActiveTab('shop');
+    if (!selectedImage) return alert("Scatta o seleziona prima una foto!");
     
     setIsProcessing(true);
     setIsDone(false);
 
     try {
-      // Qui l'app chiama il "tunnel" che hai creato su Replicate
       const response = await fetch("/api/replicate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          image: "https://replicate.delivery/pbxt/IJ9M9Z9J9Z9J9Z9J9Z9J9Z9J/room.jpg" // Foto di test
-        }),
+        body: JSON.stringify({ image: selectedImage }),
       });
 
       const data = await response.json();
@@ -56,7 +72,7 @@ export default function RealEstateApp() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-50">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('home')}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveTab('home'); setSelectedImage(null);}}>
             <Sparkles className="text-blue-600 w-7 h-7" />
             <h1 className="font-black text-2xl tracking-tighter text-blue-600 italic uppercase">RE-MAGIC</h1>
           </div>
@@ -86,7 +102,7 @@ export default function RealEstateApp() {
           </div>
         ) : (
           <div className="space-y-6 animate-in slide-in-from-bottom-6">
-            <button onClick={() => {setActiveTab('home'); setIsDone(false);}} className="flex items-center gap-3 text-slate-500 font-black text-sm uppercase tracking-widest py-2">
+            <button onClick={() => {setActiveTab('home'); setIsDone(false); setSelectedImage(null);}} className="flex items-center gap-3 text-slate-500 font-black text-sm uppercase tracking-widest py-2">
               <ArrowLeft className="w-5 h-5" /> Indietro
             </button>
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 text-center">
@@ -95,44 +111,26 @@ export default function RealEstateApp() {
                   <div className="mb-8 p-6 bg-blue-50 rounded-3xl text-left border border-blue-100 italic font-bold text-blue-800">
                     <p>💡 L'AI bilancerà le luci e raddrizzerà le pareti storte per te.</p>
                   </div>
-                  <div className="aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8">
-                    {isProcessing ? <Loader2 className="w-14 h-14 text-blue-600 animate-spin" /> : <Camera className="w-14 h-14 text-slate-200" />}
-                  </div>
-                  <button onClick={startAiMagic} disabled={isProcessing} className="w-full bg-blue-600 text-white py-7 rounded-[2rem] font-black text-lg shadow-xl flex items-center justify-center gap-4">
-                    <Sparkles className="w-7 h-7" /> {isProcessing ? "CONNETTENDO AI..." : "AVVIA MAGIA"}
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col items-center animate-in zoom-in">
-                  <div className="bg-emerald-100 p-5 rounded-full mb-4">
-                    <CheckCircle className="w-12 h-12 text-emerald-500" />
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter mb-8 text-center">Risultato Pronto!</h3>
-                  <div className="space-y-4 w-full text-center">
-                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-lg">
-                      <div className="flex items-center gap-4">
-                        <ImageIcon className="w-6 h-6 text-blue-400" />
-                        <span className="font-black text-sm tracking-tight uppercase">Portali 4:3</span>
-                      </div>
-                      <Download className="w-6 h-6 text-blue-400" />
-                    </button>
-                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <Smartphone className="w-6 h-6 text-purple-500" />
-                        <span className="font-black text-sm tracking-tight uppercase">Social 4:5</span>
-                      </div>
-                      <Download className="w-6 h-6 text-purple-500" />
-                    </button>
-                  </div>
-                  <button onClick={() => setIsDone(false)} className="mt-10 text-slate-400 font-black text-xs uppercase tracking-widest border-b-2 border-slate-200 pb-1">
-                    Nuova Elaborazione
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+                  
+                  {/* INPUT NASCOSTO PER FOTOCAMERA */}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                  />
+
+                  <div 
+                    onClick={handleCaptureClick}
+                    className="aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8 overflow-hidden cursor-pointer active:bg-slate-100 transition-colors"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-14 h-14 text-blue-600 animate-spin" />
+                    ) : selectedImage ? (
+                      <img src={selectedImage} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <Camera className="w-14 h-14 text-slate-300 mb-2" />
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-tighter">Tocca
