@@ -60,10 +60,11 @@ export default function RealEstateApp() {
 
       <main className="flex-1 p-5 max-w-md mx-auto w-full">
         {activeTab === 'home' ? (
-          <div className="space-y-8 animate-in fade-in">
+          <div className="space-y-8">
             <div className="py-6 text-center">
-              <h2 className="text-3xl font-black text-slate-800 leading-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
+              <h2 className="text-3xl font-black text-slate-800 leading-tight tracking-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
             </div>
+            
             <div className="grid grid-cols-2 gap-5">
               <button onClick={() => setActiveTab('photo')} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3 hover:shadow-md transition-all active:scale-95 text-center">
                 <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg"><ImageIcon className="w-8 h-8 text-white" /></div>
@@ -82,23 +83,24 @@ export default function RealEstateApp() {
                 <div><p className="font-black text-xs uppercase text-slate-800">Social</p><p className="text-[10px] text-slate-500 font-bold uppercase opacity-60">Post Grafici</p></div>
               </button>
             </div>
+
             <div onClick={() => setActiveTab('shop')} className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl cursor-pointer active:scale-95 transition-all mt-4 text-center">
                <h3 className="text-xl font-black mb-1 uppercase tracking-tight italic text-blue-400">Ricarica Crediti</h3>
                <p className="text-sm opacity-70 leading-relaxed font-medium text-slate-300">Scegli un pacchetto professionale.</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-6 animate-in slide-in-from-bottom-6">
+          <div className="space-y-6">
             <button onClick={() => {setActiveTab('home'); setIsDone(false); setSelectedImage(null);}} className="flex items-center gap-3 text-slate-400 font-black text-xs uppercase tracking-widest py-2">
               <ArrowLeft className="w-4 h-4" /> Torna alla Home
             </button>
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 text-center">
               {!isDone ? (
                 <>
-                  <div className="mb-8 p-6 bg-blue-50 rounded-3xl text-left border border-blue-100 italic font-bold text-blue-800">
-                    <p className="text-sm text-center">💡 L'AI bilancerà le luci e raddrizzerà le pareti storte per te.</p>
+                  <div className="mb-8 p-6 bg-blue-50 rounded-3xl text-left border border-blue-100">
+                    <p className="italic font-bold text-blue-800 text-sm text-center">💡 L'AI bilancerà le luci e raddrizzerà le pareti storte per te.</p>
                   </div>
-                  <label className="relative aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8 overflow-hidden cursor-pointer active:bg-slate-100 transition-all">
+                  <label className="relative aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8 overflow-hidden cursor-pointer active:bg-slate-100 transition-all shadow-inner">
                     <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" />
                     {isProcessing ? (
                       <Loader2 className="w-14 h-14 text-blue-600 animate-spin" />
@@ -116,18 +118,18 @@ export default function RealEstateApp() {
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col items-center animate-in zoom-in py-4">
-                  <div className="bg-emerald-100 p-6 rounded-full mb-6 border border-emerald-200">
+                <div className="flex flex-col items-center py-4">
+                  <div className="bg-emerald-100 p-6 rounded-full mb-6 border border-emerald-200 shadow-sm">
                     <CheckCircle className="w-14 h-14 text-emerald-500" />
                   </div>
                   <h3 className="text-2xl font-black text-slate-800 uppercase italic mb-8 tracking-tighter">Risultato Pronto!</h3>
                   <div className="w-full space-y-4">
-                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-lg">
-                      <div className="flex items-center gap-4"><ImageIcon className="w-6 h-6 text-blue-400" /><span className="font-black text-sm tracking-tight uppercase italic">Portale (4:3)</span></div>
+                    <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-lg active:scale-95 transition-all">
+                      <div className="flex items-center gap-4"><ImageIcon className="w-6 h-6 text-blue-400" /><span className="font-black text-sm tracking-tight uppercase tracking-widest italic">Portale (4:3)</span></div>
                       <Download className="w-6 h-6 text-blue-400" />
                     </button>
-                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between shadow-sm">
-                      <div className="flex items-center gap-4"><Smartphone className="w-6 h-6 text-purple-500" /><span className="font-black text-sm tracking-tight uppercase italic">Social (4:5)</span></div>
+                    <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between shadow-sm active:scale-95 transition-all">
+                      <div className="flex items-center gap-4"><Smartphone className="w-6 h-6 text-purple-500" /><span className="font-black text-sm tracking-tight uppercase tracking-widest italic">Social (4:5)</span></div>
                       <Download className="w-6 h-6 text-purple-500" />
                     </button>
                   </div>
