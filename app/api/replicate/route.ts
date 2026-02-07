@@ -19,14 +19,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nessuna immagine ricevuta" }, { status: 400 });
     }
 
-    // MODELLO GRATUITO TOPAZ LABS (Dalla collezione Try-for-free)
-    // Questo modello serve per pulire l'immagine e aumentarne la nitidezza
+    // MODELLO ULTRA-STABILE E SOLITAMENTE GRATUITO
     const output = await replicate.run(
-      "topazlabs/image-upscale:89d5828d570530b62e4975514f777c59c5d10526e0e676a086055d0cf880816a",
+      "sczhou/codeformer:7de2ea4a3562d28d11c6d1d7fa571ec9034cfc7833b45e6f0adef54999c63fe1",
       {
         input: {
           image: image,
-          upscale_factor: 2
+          upscale: 2,
+          face_upsample: false,
+          background_enhance: true,
+          codeformer_fidelity: 0.7
         }
       }
     );
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Errore Replicate:", error);
     return NextResponse.json({ 
-      error: "Errore durante l'elaborazione: " + error.message 
+      error: "Riprova tra un minuto: " + error.message 
     }, { status: 500 });
   }
 }
