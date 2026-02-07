@@ -9,7 +9,6 @@ export default function RealEstateApp() {
   const [isDone, setIsDone] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // 1. GESTIONE DELL'IMMAGINE (SCATTA O CARICA)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -21,48 +20,28 @@ export default function RealEstateApp() {
     }
   };
 
-  // 2. AVVIO AI MAGIC
   const startAiMagic = async () => {
     if (credits <= 0) return setActiveTab('shop');
-    if (!selectedImage) return alert("Scatta o seleziona prima una foto!");
-    
+    if (!selectedImage) return alert("Seleziona una foto!");
     setIsProcessing(true);
     setIsDone(false);
-
     try {
       const response = await fetch("/api/replicate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: selectedImage }),
       });
-
       const data = await response.json();
-      
       if (data.output) {
         setCredits(prev => prev - 1);
         setIsDone(true);
-      } else {
-        alert("L'AI non ha restituito un risultato. Riprova!");
       }
     } catch (error) {
-      console.error("Errore AI:", error);
-      alert("C'è stato un problema con l'AI. Riprova!");
+      alert("Errore AI. Riprova!");
     } finally {
       setIsProcessing(false);
     }
   };
-
-  const MenuButton = ({ icon: Icon, label, sub, color, tab }: any) => (
-    <button onClick={() => setActiveTab(tab)} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-4 hover:shadow-md transition-all active:scale-95 text-center w-full">
-      <div className={`w-16 h-16 ${color} rounded-2xl flex items-center justify-center mb-1 shadow-lg`}>
-        <Icon className="w-10 h-10 text-white" />
-      </div>
-      <div>
-        <p className="font-black text-sm uppercase tracking-tight text-slate-800">{label}</p>
-        <p className="text-xs text-slate-500 font-medium leading-tight mt-1">{sub}</p>
-      </div>
-    </button>
-  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
@@ -85,6 +64,59 @@ export default function RealEstateApp() {
             <div className="py-6 text-center">
               <h2 className="text-3xl font-black text-slate-800 leading-tight">Cosa vuoi creare<br/>oggi, Silvia?</h2>
             </div>
-            <div className="grid grid-cols-2 gap-5">
-              <MenuButton icon={ImageIcon} label="Foto AI" sub="Luci e Prospettiva" color="bg-blue-500" tab="photo" />
-              <MenuButton icon={Layout} label="Arredo" sub="Virtual Staging" color="bg-indigo-500"
+            <div className="grid grid-cols-2 gap-5 text-center">
+              <button onClick={() => setActiveTab('photo')} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-4 hover:shadow-md transition-all active:scale-95">
+                <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-1 shadow-lg">
+                  <ImageIcon className="w-10 h-10 text-white" />
+                </div>
+                <p className="font-black text-sm uppercase tracking-tight text-slate-800">Foto AI</p>
+              </button>
+              <button onClick={() => setActiveTab('staging')} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-4 hover:shadow-md transition-all active:scale-95">
+                <div className="w-16 h-16 bg-indigo-500 rounded-2xl flex items-center justify-center mb-1 shadow-lg">
+                  <Layout className="w-10 h-10 text-white" />
+                </div>
+                <p className="font-black text-sm uppercase tracking-tight text-slate-800">Arredo</p>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 animate-in slide-in-from-bottom-6">
+            <button onClick={() => {setActiveTab('home'); setIsDone(false); setSelectedImage(null);}} className="flex items-center gap-3 text-slate-500 font-black text-sm uppercase tracking-widest py-2">
+              <ArrowLeft className="w-5 h-5" /> Indietro
+            </button>
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 text-center">
+              {!isDone ? (
+                <>
+                  <label className="relative aspect-square border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center mb-8 overflow-hidden cursor-pointer active:bg-slate-100">
+                    <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" />
+                    {isProcessing ? (
+                      <Loader2 className="w-14 h-14 text-blue-600 animate-spin" />
+                    ) : selectedImage ? (
+                      <img src={selectedImage} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Camera className="w-14 h-14 text-slate-300 mb-2" />
+                        <p className="text-slate-400 font-bold text-xs uppercase italic">Tocca per scattare</p>
+                      </div>
+                    )}
+                  </label>
+                  <button onClick={startAiMagic} disabled={isProcessing || !selectedImage} className={`w-full ${!selectedImage ? 'bg-slate-200' : 'bg-blue-600'} text-white py-7 rounded-[2rem] font-black text-lg shadow-xl flex items-center justify-center gap-4 transition-all`}>
+                    <Sparkles className="w-7 h-7" /> {isProcessing ? "ELABORAZIONE..." : "AVVIA MAGIA"}
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center animate-in zoom-in">
+                  <div className="bg-emerald-100 p-5 rounded-full mb-4">
+                    <CheckCircle className="w-12 h-12 text-emerald-500" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 uppercase italic mb-8">Risultato Pronto!</h3>
+                  <button onClick={() => {setIsDone(false); setSelectedImage(null);}} className="mt-10 text-slate-400 font-black text-xs uppercase border-b-2 border-slate-200 pb-1">Nuova Elaborazione</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
