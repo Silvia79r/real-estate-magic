@@ -1,33 +1,23 @@
 import { NextResponse } from "next/server";
 
+export const maxDuration = 10; // Imposta il limite esplicito per Vercel
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
-    // 1. Controllo Chiave
     const apiKey = process.env.LEONARDO_API_KEY;
-    if (!apiKey) {
-      console.error("API Key Leonardo mancante");
-      return NextResponse.json({ error: "Errore Configurazione: Manca API Key su Vercel." }, { status: 500 });
-    }
+    if (!apiKey) return NextResponse.json({ error: "API Key mancante su Vercel" }, { status: 500 });
 
-    // 2. Controllo Body e Immagine
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      return NextResponse.json({ error: "Immagine troppo grande o dati non validi." }, { status: 400 });
-    }
-
+    const body = await req.json();
     const { image } = body;
-    if (!image) {
-      return NextResponse.json({ error: "Nessuna immagine ricevuta dal client." }, { status: 400 });
-    }
 
-    // 3. Conversione SICURA (Base64 -> Buffer)
-    // Questo metodo evita l'errore "toString" che avevi prima
+    if (!image) return NextResponse.json({ error: "Nessuna immagine ricevuta" }, { status: 400 });
+
+    // Conversione Immagine
     const base64Data = image.includes("base64,") ? image.split("base64,")[1] : image;
     const imgBuffer = Buffer.from(base64Data, "base64");
 
-    // 4. Init Upload su Leonardo
+    // 1. Init Upload (Veloce)
     const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -38,29 +28,20 @@ export async function POST(req: Request) {
       body: JSON.stringify({ extension: "jpg" })
     });
 
-    if (!initRes.ok) {
-      const errText = await initRes.text();
-      throw new Error(`Leonardo Init Error: ${initRes.status} - ${errText}`);
-    }
-    
+    if (!initRes.ok) throw new Error("Errore Init Leonardo");
     const initData = await initRes.json();
-    if (!initData.uploadInitImage) {
-        throw new Error("Risposta Leonardo imprevista (uploadInitImage mancante)");
-    }
     const { uploadUrl, id: imageId } = initData.uploadInitImage;
 
-    // 5. Upload Immagine su S3
+    // 2. Upload (Veloce se il file è piccolo)
     const uploadRes = await fetch(uploadUrl, {
       method: "PUT",
       body: imgBuffer,
       headers: { "Content-Type": "image/jpeg" }
     });
     
-    if (!uploadRes.ok) {
-        throw new Error(`Errore Upload Immagine: ${uploadRes.status}`);
-    }
+    if (!uploadRes.ok) throw new Error("Errore Upload su Leonardo");
 
-    // 6. Avvia Generazione (Upscale)
+    // 3. Avvia Generazione (Upscale)
     const upscaleRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
       method: "POST",
       headers: {
@@ -71,20 +52,22 @@ export async function POST(req: Request) {
       body: JSON.stringify({ arg: { imageId: imageId } })
     });
 
-    if (!upscaleRes.ok) throw new Error("Errore avvio Leonardo Upscale");
-    
+    if (!upscaleRes.ok) throw new Error("Errore Avvio Job Leonardo");
     const upscaleData = await upscaleRes.json();
     const generationId = upscaleData.sdUpscaleJob?.id;
 
-    if (!generationId) throw new Error("ID Generazione mancante.");
-
-    // 7. Attesa Risultato (Polling)
+    // 4. GARA CONTRO IL TEMPO
+    // Aspettiamo il risultato, ma se passano 8 secondi ci fermiamo per non far crashare Vercel
     let finalImageUrl = null;
-    let attempts = 0;
+    const startTime = Date.now();
     
-    // Proviamo per 10 cicli (circa 20 secondi)
-    while (attempts < 10 && !finalImageUrl) {
-      await new Promise(r => setTimeout(r, 2000));
+    while (!finalImageUrl) {
+      // Se sono passati più di 8 secondi, usciamo dal loop PRIMA che Vercel ci uccida
+      if (Date.now() - startTime > 8000) {
+        throw new Error("TIMEOUT_SICUREZZA");
+      }
+
+      await new Promise(r => setTimeout(r, 1000)); // Aspetta 1 secondo
       
       const checkRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/${generationId}`, {
         method: "GET",
@@ -101,20 +84,21 @@ export async function POST(req: Request) {
           throw new Error("Leonardo ha fallito la generazione.");
         }
       }
-      attempts++;
     }
-
-    if (!finalImageUrl) throw new Error("Timeout: Leonardo ci sta mettendo troppo tempo.");
 
     return NextResponse.json({ output: finalImageUrl });
 
   } catch (error: any) {
-    console.error("CRITICAL BACKEND ERROR:", error);
-    // Gestione errore sicura per evitare crash
-    let msg = "Errore interno del server";
-    if (error instanceof Error) msg = error.message;
-    else if (typeof error === "string") msg = error;
+    console.error("Backend Error:", error);
     
+    // Gestione specifica del Timeout
+    if (error.message === "TIMEOUT_SICUREZZA") {
+      return NextResponse.json({ 
+        error: "Il server ci sta mettendo troppo tempo (limite 10s). Riprova, a volte Leonardo è più veloce." 
+      }, { status: 504 });
+    }
+
+    const msg = error instanceof Error ? error.message : "Errore generico";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
