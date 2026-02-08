@@ -44,4 +44,9 @@ export default function Home() {
               <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
                 {/* FOTO "DOPO" (Sotto, luminosa) */}
                 <img 
-                  src
+                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" 
+                  alt="Dopo" 
+                  className="w-full h-full object-cover absolute inset-0"
+                />
+                
+                {
