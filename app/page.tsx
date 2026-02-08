@@ -2,23 +2,26 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Camera, Download, Share2, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Download, Share2, Sparkles, RefreshCw } from "lucide-react";
 
 export default function FotoAIPage() {
-  const [image, setImage] = useState<string | null>(null);
+  // --- CONFIGURAZIONE CLOUDINARY (INSERISCI I TUOI DATI QUI) ---
+  const CLOUD_NAME = "dfzptsood"; // Es: "dxk...", lo trovi nella Dashboard
+  const UPLOAD_PRESET = "remagic"; // Es: "ml_default", creato come 'Unsigned'
+  // -------------------------------------------------------------
+
+  const [image, setImage] = useState<string | null>(null); // Anteprima locale
+  const [imageFile, setImageFile] = useState<File | null>(null); // File vero per upload
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // GESTIONE UPLOAD
+  // GESTIONE SELEZIONE FILE
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 4.5 * 1024 * 1024) {
-        alert("Immagine troppo grande. Usa una foto sotto i 4MB.");
-        return;
-      }
+      setImageFile(file); // Salviamo il file per inviarlo dopo
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -29,47 +32,49 @@ export default function FotoAIPage() {
     }
   };
 
-  // FUNZIONE MAGICA BLINDATA
+  // FUNZIONE MAGICA (Diretta a Cloudinary - Niente Server Vercel!)
   const startAiMagic = async () => {
-    if (!image) return;
+    if (!imageFile) return;
+    
+    // Controllo se hai messo i dati
+    if (CLOUD_NAME.includes("INSERISCI") || UPLOAD_PRESET.includes("INSERISCI")) {
+        alert("⚠️ Manca la configurazione di Cloudinary nel codice!");
+        return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/replicate", {
+      // 1. Prepariamo i dati per Cloudinary
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      // 2. Invio DIRETTO (Bypassiamo Vercel = Niente Timeout)
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image }),
+        body: formData,
       });
 
-      // 1. Se il server non risponde o dà errore, NON cerchiamo di capire perché.
-      // Lanciamo un errore generico sicuro che non causa crash.
-      if (!response.ok) {
-        throw new Error("Errore comunicazione Server (Timeout o Chiavi)");
-      }
+      if (!response.ok) throw new Error("Errore Upload su Cloudinary");
 
-      // 2. Proviamo a leggere i dati
-      const textData = await response.text(); 
-      let data;
-      try {
-        data = JSON.parse(textData);
-      } catch (e) {
-        throw new Error("Il server ha risposto con dati non validi.");
-      }
+      const data = await response.json();
+      
+      // 3. Applichiamo i Filtri AI Magici "On The Fly"
+      // e_improve: AI per luci e colori
+      // e_sharpen: Nitidezza
+      // e_vibrance: Vividezza colori
+      const originalUrl = data.secure_url;
+      
+      // Costruiamo l'URL "Migliorato" inserendo i comandi nell'URL
+      const magicUrl = originalUrl.replace("/upload/", "/upload/e_improve,e_sharpen:60,e_vibrance:30/");
 
-      // 3. Controllo risultato
-      if (data && data.output) {
-        setResult(data.output);
-      } else {
-        throw new Error("Nessuna immagine generata.");
-      }
+      setResult(magicUrl);
 
     } catch (err) {
       console.error(err);
-      // Qui sta il trucco: NON usiamo err.message o toString.
-      // Scriviamo un messaggio fisso. Così è IMPOSSIBILE che esca "undefined reading toString".
-      setError("Si è verificato un errore durante la generazione. Riprova.");
+      setError("Si è verificato un errore di connessione.");
     } finally {
       setLoading(false);
     }
@@ -77,135 +82,79 @@ export default function FotoAIPage() {
 
   const downloadImage = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = filename;
-      link.click();
-    } catch (e) {
-      window.open(url, '_blank');
-    }
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    } catch(e) { window.open(url, '_blank'); }
   };
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 font-sans text-slate-900">
-      
-      {/* HEADER */}
       <header className="px-6 py-4 flex items-center gap-4 bg-white border-b border-slate-200 sticky top-0 z-10">
         <Link href="/" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
           <ArrowLeft size={20} className="text-slate-600" />
         </Link>
-        <h1 className="text-xl font-bold">Foto AI</h1>
+        <h1 className="text-xl font-bold">Foto AI (Cloudinary)</h1>
       </header>
 
       <main className="max-w-xl mx-auto px-6 py-8">
         
-        {/* BOX ERRORE SEMPLICE */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
-            <AlertCircle size={24} className="shrink-0" />
-            <p className="text-sm font-medium">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-bold">
+            {error}
           </div>
         )}
 
-        {/* AREA UPLOAD */}
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-8">
           {!image ? (
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 gap-4"
-            >
-              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                <Upload size={32} />
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-slate-700">Carica una foto</p>
-                <p className="text-sm text-slate-400">Tocca per scattare o caricare</p>
-              </div>
+            <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 gap-4">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center"><Upload size={32} /></div>
+              <p className="font-bold text-slate-700">Carica una foto</p>
             </div>
           ) : (
             <div className="relative rounded-2xl overflow-hidden h-96 bg-slate-900">
-              <img 
-                src={result || image} 
-                alt="Preview" 
-                className="w-full h-full object-cover"
-              />
-
+              <img src={result || image} className="w-full h-full object-cover" />
               <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
                 {result ? "DOPO (AI)" : "PRIMA"}
               </div>
-
+              
               {loading && (
                 <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-20">
-                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                  <p className="text-white font-bold animate-pulse">Generazione...</p>
+                    <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-white font-bold animate-pulse">Miglioramento in corso...</p>
                 </div>
               )}
 
               {!loading && (
-                <button 
-                  onClick={() => { setImage(null); setResult(null); setError(null); }}
-                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-white/20 backdrop-blur-md"
-                >
+                 <button onClick={() => { setImage(null); setResult(null); setImageFile(null); }} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full">
                   <RefreshCw size={20} />
                 </button>
               )}
             </div>
           )}
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImageUpload} 
-            className="hidden" 
-            accept="image/*"
-          />
+          <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
         </div>
 
-        {/* AZIONI */}
         <div className="space-y-4">
           {!image && (
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2"
-            >
-              <Camera size={24} />
-              Scatta o Carica
+            <button onClick={() => fileInputRef.current?.click()} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
+              <Camera size={24} /> Scatta o Carica
             </button>
           )}
-
           {image && !result && !loading && (
-            <button 
-              onClick={startAiMagic}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2"
-            >
-              <Sparkles size={24} />
-              Migliora Foto con AI
+            <button onClick={startAiMagic} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
+              <Sparkles size={24} /> Migliora Foto (Istantaneo)
             </button>
           )}
-
           {result && (
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => downloadImage(result!, 'remagic-portale.jpg')}
-                className="bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1"
-              >
-                <Download size={20} />
-                <span className="text-sm">Portale</span>
-              </button>
-              
-              <button 
-                onClick={() => downloadImage(result!, 'remagic-social.jpg')}
-                className="bg-indigo-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg"
-              >
-                <Share2 size={20} />
-                <span className="text-sm">Social</span>
-              </button>
-            </div>
+            <button onClick={() => downloadImage(result!, 'foto-magic.jpg')} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
+              <Download size={24} /> Scarica Foto
+            </button>
           )}
         </div>
-
       </main>
     </div>
   );
