@@ -28,17 +28,19 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* FOTO AI - Cucina Moderna */}
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
               <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
                 <img 
-                  src="[https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80](https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80)" 
+                  src="https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=800&q=80" 
                   alt="Dopo" 
                   className="w-full h-full object-cover absolute inset-0"
                 />
                 <div className="absolute top-0 left-0 w-1/2 h-full overflow-hidden border-r-2 border-white/80 z-10">
                     <img 
-                      src="[https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80](https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80)" 
+                      src="https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=800&q=80" 
                       alt="Prima" 
                       className="w-[200%] max-w-none h-full object-cover filter brightness-75 contrast-125 sepia-[.2]" 
                     />
@@ -65,13 +67,14 @@ export default function Home() {
             </div>
           </Link>
 
+          {/* ARREDO - Vuoto vs Pieno */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 flex">
                <div className="w-1/2 h-full overflow-hidden border-r-2 border-white">
-                  <img src="[https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&w=400&q=80)" className="w-full h-full object-cover" alt="Vuota" />
+                  <img src="https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&w=400&q=80" className="w-full h-full object-cover" alt="Vuota" />
                </div>
                <div className="w-1/2 h-full overflow-hidden">
-                  <img src="[https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=400&q=80](https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=400&q=80)" className="w-full h-full object-cover" alt="Arredata" />
+                  <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=400&q=80" className="w-full h-full object-cover" alt="Arredata" />
                </div>
                <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-white/30 backdrop-blur-md p-2 rounded-full border border-white/50">
@@ -90,10 +93,11 @@ export default function Home() {
             </div>
           </div>
 
+          {/* VIDEO 360 - Villa Esterna */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
-                src="[https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80](https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80)" 
+                src="https://images.unsplash.com/photo-1600596542815-e495e91f0747?auto=format&fit=crop&w=800&q=80" 
                 alt="Villa Esterna"
                 className="w-full h-full object-cover opacity-90"
               />
@@ -114,12 +118,13 @@ export default function Home() {
             </div>
           </div>
 
+          {/* SOCIAL - Griglia 4 Immagini */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 grid grid-cols-2 gap-0.5">
-               <img src="[https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?auto=format&fit=crop&w=300&q=80](https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?auto=format&fit=crop&w=300&q=80)" className="w-full h-full object-cover" />
-               <img src="[https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=300&q=80](https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=300&q=80)" className="w-full h-full object-cover" />
-               <img src="[https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=300&q=80](https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=300&q=80)" className="w-full h-full object-cover" />
-               <img src="[https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=300&q=80](https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=300&q=80)" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                   <div className="bg-white p-2 rounded-xl shadow-lg">
                     <Instagram size={20} className="text-slate-900" />
