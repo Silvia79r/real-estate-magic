@@ -8,7 +8,7 @@ export default function Home() {
       {/* HEADER */}
       <header className="px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* LOGO: Quadrato Blu con Scintilla Bianca */}
+          {/* LOGO: Quadrato Blu con Scintilla */}
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
             <Sparkles size={18} className="text-white fill-white" />
           </div>
@@ -38,4 +38,36 @@ export default function Home() {
 
           {/* CARD 1: FOTO AI (ATTIVA) */}
           <Link href="/foto-ai" className="group block">
-            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl
+            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
+              
+              {/* Immagine Split Screen (Stessa foto, filtro diverso) */}
+              <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
+                {/* FOTO "DOPO" (Sotto, luminosa) */}
+                <img 
+                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" 
+                  alt="Dopo" 
+                  className="w-full h-full object-cover absolute inset-0"
+                />
+                
+                {/* FOTO "PRIMA" (Sopra, tagliata a metà e scurita) */}
+                <div className="absolute top-0 left-0 w-1/2 h-full overflow-hidden border-r-2 border-white/80 z-10">
+                    <img 
+                      src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" 
+                      alt="Prima" 
+                      className="w-[200%] max-w-none h-full object-cover filter brightness-75 contrast-125 sepia-[.2]" 
+                    />
+                </div>
+
+                {/* Badge e Etichette */}
+                <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur text-indigo-700 text-[10px] font-bold px-3 py-1 rounded-full border border-white/20 shadow-sm uppercase tracking-wide">
+                  Migliora Foto
+                </div>
+                <div className="absolute bottom-3 left-3 z-20 bg-black/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                  PRIMA
+                </div>
+                <div className="absolute bottom-3 right-3 z-20 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg">
+                  DOPO
+                </div>
+              </div>
+
+              {/* Testo Card
