@@ -29,7 +29,7 @@ export default function Home() {
         {/* GRIGLIA PULSANTI */}
         <div className="grid grid-cols-2 gap-4 mb-8">
           
-          {/* 1. FOTO AI (Link alla pagina che abbiamo appena creato) */}
+          {/* 1. FOTO AI (Attivo) */}
           <Link href="/foto-ai" className="group">
             <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all h-full flex flex-col justify-between">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -42,8 +42,8 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* 2. ARREDO (Coming Soon) */}
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale">
+          {/* 2. ARREDO (In arrivo) */}
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale cursor-not-allowed">
             <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
               <Armchair size={24} />
             </div>
@@ -53,8 +53,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3. VIDEO 360 (Coming Soon) */}
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale">
+          {/* 3. VIDEO 360 (In arrivo) */}
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale cursor-not-allowed">
             <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-4">
               <Video size={24} />
             </div>
@@ -64,8 +64,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 4. SOCIAL (Coming Soon) */}
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale">
+          {/* 4. SOCIAL (In arrivo) */}
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 opacity-60 h-full flex flex-col justify-between grayscale cursor-not-allowed">
             <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-4">
               <Share2 size={24} />
             </div>
