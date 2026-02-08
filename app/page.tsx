@@ -1,175 +1,229 @@
 "use client";
-import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Sparkles, CreditCard, Video, Layout, Share2, Loader2, CheckCircle, Smartphone, ArrowLeft, Download, X, Plus } from 'lucide-react';
 
-export default function RealEstateApp() {
-  const [activeTab, setActiveTab] = useState<'home' | 'photo'>('home');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [credits, setCredits] = useState(11);
-  const [isDone, setIsDone] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+import { useState, useRef } from "react";
+import Link from "next/link";
+import { ArrowLeft, Upload, Camera, Download, Share2, Sparkles, AlertCircle } from "lucide-react";
 
-  const compressImage = (base64Str: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200;
-        let width = img.width;
-        let height = img.height;
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+export default function FotoAIPage() {
+  const [image, setImage] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Gestione Caricamento Immagine
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+        setResult(null); // Reset risultato precedente
+        setError(null);
       };
-    });
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      for (let i = 0; i < files.length; i++) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const compressed = await compressImage(reader.result as string);
-          setSelectedImages(prev => [...prev, compressed]);
-        };
-        reader.readAsDataURL(files[i]);
-      }
+      reader.readAsDataURL(file);
     }
   };
 
+  // Funzione Magica (Backend)
   const startAiMagic = async () => {
-    if (credits <= 0 || selectedImages.length === 0) return;
-    setIsProcessing(true);
+    if (!image) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
-      const res = await fetch("/api/replicate", {
+      console.log("Inizio richiesta al server...");
+      
+      const response = await fetch("/api/replicate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: selectedImages[0] }),
+        body: JSON.stringify({ image }),
       });
-      const data = await res.json();
-      if (data.output) {
-        setCredits(prev => prev - 1);
-        setIsDone(true);
-      } else {
-        alert(data.error || "Errore API");
+
+      console.log("Stato risposta:", response.status);
+
+      // Gestione sicura della risposta
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Errore parsing JSON:", e);
+        throw new Error("Il server ha risposto con un errore non leggibile (forse errore 500 html).");
       }
-    } catch (err) {
-      alert("Errore di connessione.");
+
+      if (!response.ok) {
+        // Se c'è un errore, usiamo quello, altrimenti un messaggio generico
+        throw new Error(data.error || `Errore server: ${response.status}`);
+      }
+
+      if (data.output) {
+        setResult(data.output);
+      } else {
+        throw new Error("Nessuna immagine generata ricevuta.");
+      }
+
+    } catch (err: any) {
+      console.error("Errore Frontend:", err);
+      // Qui evitiamo l'errore "toString of undefined"
+      const message = err instanceof Error ? err.message : "Errore sconosciuto durante la generazione.";
+      setError(message);
+      alert(message); // Mostra l'errore vero all'utente
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
-  if (activeTab === 'photo') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-        <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-50">
-          <div className="max-w-md mx-auto flex items-center justify-between">
-            <button onClick={() => {setActiveTab('home'); setIsDone(false); setSelectedImages([]);}} className="flex items-center gap-2 text-blue-600 font-bold">
-              <ArrowLeft className="w-5 h-5" /> Home
-            </button>
-            <div className="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-2 border border-blue-100">
-              <CreditCard className="w-5 h-5 text-blue-600" />
-              <span className="text-lg font-black text-blue-700">{credits}</span>
-            </div>
-          </div>
-        </header>
+  // Funzione Download
+  const downloadImage = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Errore download:", e);
+      window.open(url, '_blank');
+    }
+  };
 
-        <main className="flex-1 p-5 max-w-md mx-auto w-full">
-          {!isDone ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                {selectedImages.map((img, index) => (
-                  <div key={index} className="relative aspect-square rounded-3xl overflow-hidden border-4 border-white shadow-sm">
-                    <img src={img} className="w-full h-full object-cover" />
-                    <button onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))} className="absolute top-2 right-2 bg-white/90 rounded-full p-1 shadow-lg">
-                      <X className="w-4 h-4 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-                <label className="aspect-square border-4 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 flex flex-col items-center justify-center cursor-pointer">
-                  <input type="file" multiple accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
-                  <Plus className="w-10 h-10 text-slate-300" />
-                  <p className="text-[10px] text-slate-400 font-black uppercase mt-1">Aggiungi</p>
-                </label>
+  return (
+    <div className="bg-slate-50 min-h-screen pb-20 font-sans text-slate-900">
+      
+      {/* HEADER */}
+      <header className="px-6 py-4 flex items-center gap-4 bg-white border-b border-slate-200 sticky top-0 z-10">
+        <Link href="/" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
+          <ArrowLeft size={20} className="text-slate-600" />
+        </Link>
+        <h1 className="text-xl font-bold">Foto AI</h1>
+      </header>
+
+      <main className="max-w-xl mx-auto px-6 py-8">
+        
+        {/* MESSAGGIO ERRORE */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
+            <AlertCircle size={24} className="shrink-0" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* AREA UPLOAD / ANTEPRIMA */}
+        <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-8">
+          
+          {!image ? (
+            // Stato 1: Carica Foto
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors gap-4"
+            >
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                <Upload size={32} />
               </div>
-              {selectedImages.length > 0 && (
-                <button onClick={startAiMagic} disabled={isProcessing} className="w-full py-8 rounded-[2.5rem] font-black text-xl bg-blue-600 text-white shadow-2xl flex items-center justify-center gap-3 italic uppercase">
-                  {isProcessing ? <Loader2 className="w-8 h-8 animate-spin" /> : <><Sparkles className="w-7 h-7" /> AVVIA MAGIA</>}
+              <div className="text-center">
+                <p className="font-bold text-slate-700">Carica una foto</p>
+                <p className="text-sm text-slate-400">Tocca per scattare o caricare</p>
+              </div>
+            </div>
+          ) : (
+            // Stato 2: Foto Caricata (Prima/Dopo)
+            <div className="relative rounded-2xl overflow-hidden h-96 bg-slate-900">
+              
+              {/* Immagine */}
+              <img 
+                src={result || image} 
+                alt="Preview" 
+                className="w-full h-full object-cover"
+              />
+
+              {/* Etichette */}
+              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
+                {result ? "DOPO (AI)" : "PRIMA"}
+              </div>
+
+              {/* Loading Overlay */}
+              {loading && (
+                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center backdrop-blur-sm z-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mb-4"></div>
+                  <p className="text-white font-bold animate-pulse">Miglioramento in corso...</p>
+                </div>
+              )}
+
+              {/* Tasto Chiudi */}
+              {!loading && (
+                <button 
+                  onClick={() => { setImage(null); setResult(null); setError(null); }}
+                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 backdrop-blur-md"
+                >
+                  X
                 </button>
               )}
             </div>
-          ) : (
-            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 text-center">
-              <div className="bg-emerald-100 p-6 rounded-full mb-6 inline-block"><CheckCircle className="w-14 h-14 text-emerald-500" /></div>
-              <h3 className="text-2xl font-black text-slate-800 uppercase italic mb-8">Risultato Pronto!</h3>
-              <div className="space-y-4">
-                <button className="w-full bg-slate-900 text-white p-6 rounded-[2rem] flex items-center justify-between">
-                  <span className="font-black text-sm uppercase italic">Portale (4:3)</span>
-                  <Download className="w-6 h-6 text-blue-400" />
-                </button>
-                <button className="w-full bg-white border-4 border-slate-100 text-slate-900 p-6 rounded-[2rem] flex items-center justify-between">
-                  <span className="font-black text-sm uppercase italic">Social (4:5)</span>
-                  <Download className="w-6 h-6 text-purple-500" />
-                </button>
-              </div>
-              <button onClick={() => {setIsDone(false); setSelectedImages([]);}} className="mt-12 text-slate-400 font-black text-[10px] uppercase border-b-2 border-slate-200 pb-1">Nuova</button>
+          )}
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImageUpload} 
+            className="hidden" 
+            accept="image/*"
+            capture="environment"
+          />
+        </div>
+
+        {/* AZIONI */}
+        <div className="space-y-4">
+          
+          {/* Tasto Scatta/Carica (se non c'è immagine) */}
+          {!image && (
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+            >
+              <Camera size={24} />
+              Scatta o Carica
+            </button>
+          )}
+
+          {/* Tasto Magico (se c'è immagine ma non risultato) */}
+          {image && !result && !loading && (
+            <button 
+              onClick={startAiMagic}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+            >
+              <Sparkles size={24} />
+              Migliora Foto con AI
+            </button>
+          )}
+
+          {/* Tasti Download (se c'è risultato) */}
+          {result && (
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => downloadImage(result, 'remagic-portale.jpg')}
+                className="bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-slate-50"
+              >
+                <Download size={20} />
+                <span className="text-sm">Portale (4:3)</span>
+              </button>
+              
+              <button 
+                onClick={() => downloadImage(result, 'remagic-social.jpg')}
+                className="bg-indigo-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200"
+              >
+                <Share2 size={20} />
+                <span className="text-sm">Social (4:5)</span>
+              </button>
             </div>
           )}
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-50">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="text-blue-600 w-7 h-7" />
-            <h1 className="font-black text-2xl tracking-tighter text-blue-600 italic uppercase">RE-MAGIC</h1>
-          </div>
-          <div className="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-2 border border-blue-100">
-            <CreditCard className="w-5 h-5 text-blue-600" />
-            <span className="text-lg font-black text-blue-700">{credits}</span>
-          </div>
+          
         </div>
-      </header>
 
-      <main className="flex-1 p-5 max-w-md mx-auto w-full">
-        <div className="space-y-8">
-          <div className="py-6 text-center text-3xl font-black text-slate-800 italic">Cosa vuoi creare oggi?</div>
-          <div className="grid grid-cols-2 gap-5">
-            <button onClick={() => setActiveTab('photo')} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3">
-              <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center"><ImageIcon className="w-8 h-8 text-white" /></div>
-              <p className="font-black text-xs uppercase text-slate-800">Foto AI</p>
-            </button>
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3 opacity-50">
-              <div className="w-14 h-14 bg-indigo-500 rounded-2xl flex items-center justify-center"><Layout className="w-8 h-8 text-white" /></div>
-              <p className="font-black text-xs uppercase text-slate-800">Arredo</p>
-            </div>
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3 opacity-50">
-              <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center"><Video className="w-8 h-8 text-white" /></div>
-              <p className="font-black text-xs uppercase text-slate-800">Video 360</p>
-            </div>
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center gap-3 opacity-50">
-              <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Share2 className="w-8 h-8 text-white" /></div>
-              <p className="font-black text-xs uppercase text-slate-800">Social</p>
-            </div>
-          </div>
-          <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl mt-4 text-center">
-             <h3 className="text-xl font-black mb-1 uppercase italic text-blue-400">Ricarica Crediti</h3>
-             <p className="text-sm opacity-70">Scegli un pacchetto professionale.</p>
-          </div>
-        </div>
       </main>
     </div>
   );
