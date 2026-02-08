@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Camera, Download, Share2, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Download, Share2, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function FotoAIPage() {
   const [image, setImage] = useState<string | null>(null);
@@ -11,21 +11,21 @@ export default function FotoAIPage() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Gestione Caricamento Immagine
+  // Gestione Caricamento Immagine (Anteprima locale)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
-        setResult(null); // Reset risultato precedente
+        setResult(null);
         setError(null);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Funzione Magica (Backend)
+  // Funzione Magica (Backend call)
   const startAiMagic = async () => {
     if (!image) return;
 
@@ -33,7 +33,7 @@ export default function FotoAIPage() {
     setError(null);
 
     try {
-      console.log("Inizio richiesta al server...");
+      console.log("Invio richiesta al server...");
       
       const response = await fetch("/api/replicate", {
         method: "POST",
@@ -41,40 +41,40 @@ export default function FotoAIPage() {
         body: JSON.stringify({ image }),
       });
 
-      console.log("Stato risposta:", response.status);
+      console.log("Risposta server status:", response.status);
 
-      // Gestione sicura della risposta
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        console.error("Errore parsing JSON:", e);
-        throw new Error("Il server ha risposto con un errore non leggibile (forse errore 500 html).");
-      }
-
+      // Gestione Errori HTTP (es. 504 Timeout, 500 Server Error)
       if (!response.ok) {
-        // Se c'è un errore, usiamo quello, altrimenti un messaggio generico
-        throw new Error(data.error || `Errore server: ${response.status}`);
+        let errorMsg = `Errore Server: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            if (errorData.error) errorMsg = errorData.error;
+        } catch (e) {
+            // Se non è JSON (es. timeout HTML di Vercel), usiamo lo status text
+            errorMsg = `Errore di connessione (${response.status} ${response.statusText}). Probabile Timeout.`;
+        }
+        throw new Error(errorMsg);
       }
 
+      // Risposta OK
+      const data = await response.json();
       if (data.output) {
         setResult(data.output);
       } else {
-        throw new Error("Nessuna immagine generata ricevuta.");
+        throw new Error("Il server non ha restituito l'immagine generata.");
       }
 
     } catch (err: any) {
-      console.error("Errore Frontend:", err);
-      // Qui evitiamo l'errore "toString of undefined"
-      const message = err instanceof Error ? err.message : "Errore sconosciuto durante la generazione.";
+      console.error("Errore catturato:", err);
+      // Qui preveniamo l'errore "toString of undefined"
+      const message = err instanceof Error ? err.message : "Errore sconosciuto";
       setError(message);
-      alert(message); // Mostra l'errore vero all'utente
     } finally {
       setLoading(false);
     }
   };
 
-  // Funzione Download
+  // Download Sicuro
   const downloadImage = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
@@ -87,7 +87,6 @@ export default function FotoAIPage() {
       link.click();
       document.body.removeChild(link);
     } catch (e) {
-      console.error("Errore download:", e);
       window.open(url, '_blank');
     }
   };
@@ -105,22 +104,30 @@ export default function FotoAIPage() {
 
       <main className="max-w-xl mx-auto px-6 py-8">
         
-        {/* MESSAGGIO ERRORE */}
+        {/* BOX ERRORE */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
-            <AlertCircle size={24} className="shrink-0" />
-            <p className="text-sm font-medium">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex flex-col gap-2 text-red-700 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-center gap-2 font-bold">
+                <AlertCircle size={20} />
+                <span>Qualcosa non va</span>
+            </div>
+            <p className="text-sm">{error}</p>
+            {error.includes("Timeout") && (
+                <p className="text-xs text-red-600 mt-1">
+                    Nota: Vercel Free ha un limite di 10 secondi. Leonardo AI è troppo lento.
+                </p>
+            )}
           </div>
         )}
 
-        {/* AREA UPLOAD / ANTEPRIMA */}
+        {/* AREA PRINCIPALE */}
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-8">
           
           {!image ? (
-            // Stato 1: Carica Foto
+            // STATO 1: CARICA
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors gap-4"
+              className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors gap-4 active:scale-95 duration-200"
             >
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
                 <Upload size={32} />
@@ -131,36 +138,39 @@ export default function FotoAIPage() {
               </div>
             </div>
           ) : (
-            // Stato 2: Foto Caricata (Prima/Dopo)
-            <div className="relative rounded-2xl overflow-hidden h-96 bg-slate-900">
-              
-              {/* Immagine */}
+            // STATO 2: ANTEPRIMA / RISULTATO
+            <div className="relative rounded-2xl overflow-hidden h-96 bg-slate-900 shadow-inner">
               <img 
                 src={result || image} 
                 alt="Preview" 
                 className="w-full h-full object-cover"
               />
 
-              {/* Etichette */}
-              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
+              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
                 {result ? "DOPO (AI)" : "PRIMA"}
               </div>
 
-              {/* Loading Overlay */}
+              {/* LOADING SPINNER */}
               {loading && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center backdrop-blur-sm z-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mb-4"></div>
-                  <p className="text-white font-bold animate-pulse">Miglioramento in corso...</p>
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-20">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles size={20} className="text-blue-400 animate-pulse" />
+                    </div>
+                  </div>
+                  <p className="text-white font-bold mt-4 animate-pulse tracking-wide">Miglioramento in corso...</p>
+                  <p className="text-white/60 text-xs mt-2">Attendere prego (max 20s)</p>
                 </div>
               )}
 
-              {/* Tasto Chiudi */}
+              {/* TASTO CHIUDI */}
               {!loading && (
                 <button 
                   onClick={() => { setImage(null); setResult(null); setError(null); }}
-                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 backdrop-blur-md"
+                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-red-500/80 transition-colors backdrop-blur-md"
                 >
-                  X
+                  <RefreshCw size={20} />
                 </button>
               )}
             </div>
@@ -176,45 +186,42 @@ export default function FotoAIPage() {
           />
         </div>
 
-        {/* AZIONI */}
+        {/* PULSANTI AZIONE */}
         <div className="space-y-4">
           
-          {/* Tasto Scatta/Carica (se non c'è immagine) */}
           {!image && (
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-all"
             >
               <Camera size={24} />
               Scatta o Carica
             </button>
           )}
 
-          {/* Tasto Magico (se c'è immagine ma non risultato) */}
           {image && !result && !loading && (
             <button 
               onClick={startAiMagic}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-1 active:scale-95 transition-all"
             >
               <Sparkles size={24} />
               Migliora Foto con AI
             </button>
           )}
 
-          {/* Tasti Download (se c'è risultato) */}
           {result && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4">
               <button 
-                onClick={() => downloadImage(result, 'remagic-portale.jpg')}
-                className="bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-slate-50"
+                onClick={() => downloadImage(result!, 'remagic-portale.jpg')}
+                className="bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-slate-50 active:scale-95 transition-all"
               >
                 <Download size={20} />
                 <span className="text-sm">Portale (4:3)</span>
               </button>
               
               <button 
-                onClick={() => downloadImage(result, 'remagic-social.jpg')}
-                className="bg-indigo-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200"
+                onClick={() => downloadImage(result!, 'remagic-social.jpg')}
+                className="bg-indigo-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all"
               >
                 <Share2 size={20} />
                 <span className="text-sm">Social (4:5)</span>
