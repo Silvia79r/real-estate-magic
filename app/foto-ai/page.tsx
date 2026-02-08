@@ -53,7 +53,7 @@ export default function FotoAIPage() {
       const originalUrl = data.secure_url;
 
       // FILTRI AGGRESSIVI
-      const magicUrl = originalUrl.replace("/upload/", "/upload/e_improve:outdoor,e_saturation:50,e_contrast:30,e_sharpen:100/");
+      const magicUrl = originalUrl.replace("/upload/", "/upload/e_art:incognito/");
 
       setResult(magicUrl);
 
