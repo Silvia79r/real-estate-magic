@@ -6,11 +6,9 @@ export async function POST(req: Request) {
     if (!apiKey) return NextResponse.json({ error: "Chiave Leonardo mancante" }, { status: 500 });
 
     const { image } = await req.json();
-    
-    // Controllo extra: se non c'è l'immagine, fermiamoci subito
-    if (!image) return NextResponse.json({ error: "Nessuna immagine inviata" }, { status: 400 });
+    if (!image) return NextResponse.json({ error: "Nessuna immagine ricevuta" }, { status: 400 });
 
-    // 1. Chiediamo a Leonardo il permesso di upload
+    // 1. Ottieni URL di upload da Leonardo
     const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -21,14 +19,15 @@ export async function POST(req: Request) {
       body: JSON.stringify({ extension: "jpg" })
     });
 
-    if (!initRes.ok) throw new Error(`Errore Init: ${initRes.statusText}`);
+    if (!initRes.ok) throw new Error(`Errore Init Leonardo: ${initRes.status} ${initRes.statusText}`);
     const initData = await initRes.json();
     const { uploadUrl, id: imageId } = initData.uploadInitImage;
 
-    // 2. Carichiamo l'immagine (Metodo Buffer)
-    const imgFetch = await fetch(image);
-    const imgArrayBuffer = await imgFetch.arrayBuffer();
-    const imgBuffer = Buffer.from(imgArrayBuffer);
+    // 2. Conversione Diretta (FIX per l'errore 'toString' e 'fetch')
+    // Invece di usare fetch(image), convertiamo la stringa base64 direttamente in Buffer.
+    // È molto più robusto e non dipende dalla connessione del server.
+    const base64Data = image.includes("base64,") ? image.split("base64,")[1] : image;
+    const imgBuffer = Buffer.from(base64Data, 'base64');
 
     const uploadRes = await fetch(uploadUrl, {
       method: "PUT",
@@ -36,9 +35,9 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "image/jpeg" }
     });
     
-    if (!uploadRes.ok) throw new Error("Errore Upload Immagine su Leonardo");
+    if (!uploadRes.ok) throw new Error("Errore durante il caricamento dell'immagine sui server Leonardo");
 
-    // 3. Avviamo l'Upscale
+    // 3. Avvia la magia (Upscale)
     const upscaleRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
       method: "POST",
       headers: {
@@ -49,17 +48,16 @@ export async function POST(req: Request) {
       body: JSON.stringify({ arg: { imageId: imageId } })
     });
 
-    if (!upscaleRes.ok) throw new Error("Errore Avvio Job");
+    if (!upscaleRes.ok) throw new Error("Errore avvio elaborazione");
     const upscaleData = await upscaleRes.json();
     const generationId = upscaleData.sdUpscaleJob?.id;
 
-    // 4. CICLO DI ATTESA ESTESO (30 Secondi)
-    // Modifica cruciale: aumentato da 5 a 15 tentativi
+    // 4. Attesa del risultato (30 secondi max)
     let finalImageUrl = null;
     let attempts = 0;
     
     while (attempts < 15 && !finalImageUrl) {
-      await new Promise(r => setTimeout(r, 2000)); // Aspetta 2 secondi
+      await new Promise(r => setTimeout(r, 2000)); // Pausa 2 secondi
       
       const checkRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/${generationId}`, {
         method: "GET",
@@ -73,21 +71,22 @@ export async function POST(req: Request) {
         if (variation?.status === "COMPLETE") {
           finalImageUrl = variation.url;
         } else if (variation?.status === "FAILED") {
-          throw new Error("Leonardo ha fallito la generazione.");
+          throw new Error("Leonardo non è riuscito a elaborare questa specifica foto.");
         }
       }
       attempts++;
     }
 
     if (!finalImageUrl) {
-      throw new Error("Tempo scaduto: Leonardo è molto carico oggi. Riprova.");
+      throw new Error("Il server è lento, ma la foto sta arrivando. Riprova tra poco.");
     }
 
     return NextResponse.json({ output: finalImageUrl });
 
   } catch (error: any) {
-    console.error("Errore Backend:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Errore API:", error);
+    // Protezione contro l'errore 'toString'
+    const errMessage = (error && error.message) ? error.message : "Errore sconosciuto durante l'elaborazione";
+    return NextResponse.json({ error: errMessage }, { status: 500 });
   }
 }
