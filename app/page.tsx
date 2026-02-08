@@ -133,4 +133,46 @@ export default function Home() {
             
             {/* Griglia 2x2 Immagini */}
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 grid grid-cols-2 gap-0.5">
-               <img src
+               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1484154218962-a1c002085d2f?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               
+               {/* Icona Instagram sovrapposta */}
+               <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                  <div className="bg-white p-2 rounded-xl shadow-lg">
+                    <Instagram size={20} className="text-slate-900" />
+                  </div>
+               </div>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-xl text-slate-900 mb-2">Social</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                Post e caption virali.
+              </p>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Lock size={12} /> Presto
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      {/* BANNER RICARICA CREDITI (FIXED BOTTOM) */}
+      <div className="fixed bottom-6 left-6 right-6 z-20">
+        <div className="max-w-5xl mx-auto bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700/50">
+          <div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Piano Professional</p>
+            <p className="font-bold text-sm">Sblocca tutte le funzioni.</p>
+          </div>
+          <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-indigo-900/50">
+            Ricarica Crediti
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+}
