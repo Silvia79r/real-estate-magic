@@ -6,6 +6,9 @@ export async function POST(req: Request) {
     if (!apiKey) return NextResponse.json({ error: "Chiave Leonardo mancante" }, { status: 500 });
 
     const { image } = await req.json();
+    
+    // Controllo extra: se non c'è l'immagine, fermiamoci subito
+    if (!image) return NextResponse.json({ error: "Nessuna immagine inviata" }, { status: 400 });
 
     // 1. Chiediamo a Leonardo il permesso di upload
     const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
@@ -22,7 +25,7 @@ export async function POST(req: Request) {
     const initData = await initRes.json();
     const { uploadUrl, id: imageId } = initData.uploadInitImage;
 
-    // 2. Carichiamo l'immagine (Metodo Buffer: PIÙ SICURO SU VERCEL)
+    // 2. Carichiamo l'immagine (Metodo Buffer)
     const imgFetch = await fetch(image);
     const imgArrayBuffer = await imgFetch.arrayBuffer();
     const imgBuffer = Buffer.from(imgArrayBuffer);
@@ -50,13 +53,13 @@ export async function POST(req: Request) {
     const upscaleData = await upscaleRes.json();
     const generationId = upscaleData.sdUpscaleJob?.id;
 
-    // 4. CICLO DI ATTESA (Polling intelligente)
-    // Aspettiamo max 10 secondi (Vercel Hobby ha limiti di tempo)
+    // 4. CICLO DI ATTESA ESTESO (30 Secondi)
+    // Modifica cruciale: aumentato da 5 a 15 tentativi
     let finalImageUrl = null;
     let attempts = 0;
     
-    while (attempts < 5 && !finalImageUrl) {
-      await new Promise(r => setTimeout(r, 2000)); // 2 secondi pausa
+    while (attempts < 15 && !finalImageUrl) {
+      await new Promise(r => setTimeout(r, 2000)); // Aspetta 2 secondi
       
       const checkRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/${generationId}`, {
         method: "GET",
@@ -70,25 +73,20 @@ export async function POST(req: Request) {
         if (variation?.status === "COMPLETE") {
           finalImageUrl = variation.url;
         } else if (variation?.status === "FAILED") {
-          throw new Error("Leonardo non è riuscito a migliorare la foto.");
+          throw new Error("Leonardo ha fallito la generazione.");
         }
       }
       attempts++;
     }
 
-    // Se dopo 10 secondi non è pronta, restituiamo comunque un successo parziale
-    // per evitare che l'app vada in crash.
     if (!finalImageUrl) {
-      // Nota: Se Leonardo è lento, qui potremmo non avere l'URL. 
-      // Ma con un account a pagamento dovrebbe farcela in 4-6 secondi.
-      throw new Error("Il server di Leonardo è lento oggi. Riprova, la foto sarà pronta al prossimo click.");
+      throw new Error("Tempo scaduto: Leonardo è molto carico oggi. Riprova.");
     }
 
     return NextResponse.json({ output: finalImageUrl });
 
   } catch (error: any) {
     console.error("Errore Backend:", error);
-    // Convertiamo l'errore in stringa sicura per evitare il crash 'toString'
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
