@@ -39,11 +39,11 @@ export default function Home() {
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
               
-              {/* Immagine Card */}
+              {/* Immagine Card - Link Aggiornato e Sicuro */}
               <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                 <img 
-                  src="https://images.unsplash.com/photo-1556912173-3db9963ee790?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                  alt="Kitchen" 
+                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop" 
+                  alt="Cucina Moderna" 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 
@@ -84,7 +84,8 @@ export default function Home() {
 
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
               <img 
-                src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1616594039964-40891a9046c9?q=80&w=800&auto=format&fit=crop" 
+                alt="Camera da letto"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -108,7 +109,8 @@ export default function Home() {
             </div>
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
-                src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=800&auto=format&fit=crop" 
+                alt="Esterno Villa"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -132,7 +134,8 @@ export default function Home() {
             </div>
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
-                src="https://images.unsplash.com/photo-1616047006789-b7af5afb8c01?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1616047006789-b7af5afb8c01?q=80&w=800&auto=format&fit=crop" 
+                alt="Salotto"
                 className="w-full h-full object-cover"
               />
             </div>
