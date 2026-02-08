@@ -14,6 +14,11 @@ export default function FotoAIPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Controllo dimensione lato client (Max 4MB)
+      if (file.size > 4 * 1024 * 1024) {
+        alert("L'immagine è troppo grande per Vercel Free. Usa una foto sotto i 4MB.");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -26,7 +31,6 @@ export default function FotoAIPage() {
 
   const startAiMagic = async () => {
     if (!image) return;
-
     setLoading(true);
     setError(null);
 
@@ -37,23 +41,32 @@ export default function FotoAIPage() {
         body: JSON.stringify({ image }),
       });
 
+      // 1. CONTROLLO CRITICO: La risposta è JSON?
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        // Se non è JSON, Vercel ci ha mandato una pagina di errore HTML (spesso 504 Timeout o 500)
+        const text = await response.text();
+        console.error("Errore Non-JSON dal server:", text); // Guarda la console del browser per i dettagli
+        throw new Error(`Errore Server (${response.status}): Probabile Timeout di Vercel (10s limit).`);
+      }
+
+      // 2. Ora è sicuro leggere il JSON
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Errore sconosciuto");
+        throw new Error(data.error || "Errore generico dal server API");
       }
 
       if (data.output) {
         setResult(data.output);
       } else {
-        throw new Error("Nessuna immagine ricevuta");
+        throw new Error("Il server ha risposto OK ma senza immagine.");
       }
 
     } catch (err: any) {
-      console.error(err);
-      // Evitiamo il crash "toString"
-      const message = err.message || "Errore generico";
-      setError(message);
+      console.error("Errore Catturato:", err);
+      // Qui evitiamo l'errore "toString" usando String() che è sicuro
+      setError(String(err.message || err));
     } finally {
       setLoading(false);
     }
@@ -81,19 +94,13 @@ export default function FotoAIPage() {
 
       <main className="max-w-xl mx-auto px-6 py-8">
         
-        {/* MESSAGGIO ERRORE / TIMEOUT */}
         {error && (
-          <div className={`mb-6 p-4 border rounded-xl flex flex-col gap-2 ${error.includes("tempo") ? "bg-yellow-50 border-yellow-200 text-yellow-800" : "bg-red-50 border-red-200 text-red-700"}`}>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex flex-col gap-2 text-red-700">
             <div className="flex items-center gap-2 font-bold">
-                {error.includes("tempo") ? <Clock size={20} /> : <AlertCircle size={20} />}
-                <span>{error.includes("tempo") ? "Ci siamo quasi..." : "Errore"}</span>
+                <AlertCircle size={20} />
+                <span>Errore Rilevato</span>
             </div>
-            <p className="text-sm">{error}</p>
-            {error.includes("tempo") && (
-                <button onClick={startAiMagic} className="mt-2 bg-yellow-100 text-yellow-900 px-4 py-2 rounded-lg text-sm font-bold self-start">
-                    Riprova (spesso al 2° colpo va)
-                </button>
-            )}
+            <p className="text-sm font-mono break-words">{error}</p>
           </div>
         )}
 
@@ -112,7 +119,7 @@ export default function FotoAIPage() {
               {loading && (
                 <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-20">
                     <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-white font-bold animate-pulse">Miglioramento...</p>
+                    <p className="text-white font-bold animate-pulse">Miglioramento in corso...</p>
                 </div>
               )}
               {!loading && (
