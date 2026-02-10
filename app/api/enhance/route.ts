@@ -16,6 +16,8 @@ export async function POST(request: Request) {
     // Scarica e prepara l'immagine
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
+    
+    // Rileva estensione corretta
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
     });
 
     const initData = await initImageRes.json();
-    if (!initData.uploadInitImage) throw new Error(initData.error || "Errore Init Leonardo");
+    if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo: " + JSON.stringify(initData));
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
     // Upload Fisico
@@ -44,8 +46,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- GENERAZIONE CONSERVATIVA E SICURA ---
-    console.log("🎨 4. Avvio Miglioramento Sicuro...");
+    // --- CONFIGURAZIONE "KINO XL" (Realismo Sobrio) ---
+    console.log("🎨 4. Avvio Modello Kino XL (No Allucinazioni)...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -55,34 +57,44 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // Prompt che chiede solo pulizia e luce
-        prompt: "A high-resolution, professional photograph of this exact scene. Improved lighting, sharp details, vibrant colors, clear sky. The structure and objects are unchanged.",
+        // Prompt tecnico: chiediamo SOLO qualità, nessuna modifica strutturale
+        prompt: "Real estate photography, clean view, natural lighting, sharp focus, 8k resolution, balanced exposure, professional color grading. Do not alter the architecture. Do not add furniture.",
         
-        // Negative prompt per bloccare le invenzioni
-        negative_prompt: "altered geometry, new objects, distorted, blurry, low quality, changing structures, moving objects, different composition, deformed, new buildings, villa",
+        negative_prompt: "distorted, blurry, low quality, artifacts, noise, structural changes, new objects, messy, dark shadows, overexposed, painting, drawing, cartoon",
         
         init_image_id: imageId,
         
-        // *** IL SEGRETO ***
-        // Spegniamo tutto ciò che è "creativo".
+        // MODELLO: LEONARDO KINO XL
+        // Questo ID è specifico per il fotorealismo stabile.
+        modelId: "aa77f04e-3eec-4034-9c07-d0f619684628",
+
+        // FORZA: 0.20
+        // Mantiene l'80% dei pixel originali intatti. 
+        // Cambia solo la "pasta" della foto (luce/colore).
+        init_strength: 0.20, 
+        
+        num_images: 1,
+        
+        // SPEGNAMO TUTTO IL RESTO per evitare errori e invenzioni
         alchemy: false,
         photoReal: false,
         promptMagic: false,
-
-        // FORZA BASSISSIMA: 0.25
-        // Sufficiente per togliere il grigio e dare luce, ma non per inventare ville.
-        init_strength: 0.25, 
         
-        num_images: 1,
-        // Usiamo un modello generico e stabile
-        modelId: "ac614f96-1082-45bf-be9d-757f2d31c174" // Leonardo Diffusion
+        // Dimensioni: Lasciamo che Leonardo rispetti l'originale o usi preset standard
+        // Non forziamo width/height per evitare crop.
       }),
     });
 
     const genData = await genRes.json();
-    if (genData.error) throw new Error(genData.error);
+    
+    // Logghiamo l'errore se c'è, per capire subito cosa succede
+    if (genData.error) {
+        console.error("❌ Errore Generazione Leonardo:", genData.error);
+        throw new Error(genData.error);
+    }
+    
     const generationId = genData.sdGenerationJob?.generationId;
-    if (!generationId) throw new Error("Generazione non avviata");
+    if (!generationId) throw new Error("Generazione non avviata (Nessun ID)");
 
     // Polling
     let finalImageUrl = null;
@@ -95,8 +107,13 @@ export async function POST(request: Request) {
       });
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
-      if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
-      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
+      
+      if (job && job.status === "COMPLETE") {
+        finalImageUrl = job.generated_images[0].url;
+      } else if (job && job.status === "FAILED") {
+        console.error("Fallimento Job:", job);
+        throw new Error("Leonardo ha fallito la generazione");
+      }
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
