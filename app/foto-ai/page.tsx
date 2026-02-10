@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Upload, Camera, Sparkles, RefreshCw, Monitor, Instagram, CheckCircle2 } from "lucide-react";
 
 export default function FotoAIPage() {
+  // CONFIGURAZIONE CLOUDINARY
   const CLOUD_NAME = "dfzptsood";
   const UPLOAD_PRESET = "remagic";
 
@@ -16,6 +17,7 @@ export default function FotoAIPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultImageRef = useRef<HTMLImageElement>(null);
 
+  // Gestione caricamento file locale
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -30,43 +32,54 @@ export default function FotoAIPage() {
     }
   };
 
+  // --- NUOVA LOGICA: AI ENHANCEMENT DI CLOUDINARY ---
   const startAiMagic = async () => {
     if (!imageFile) return;
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Upload
+      // 1. Upload dell'immagine originale su Cloudinary
       const formData = new FormData();
       formData.append("file", imageFile);
       formData.append("upload_preset", UPLOAD_PRESET);
+
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
       });
-      if (!uploadResponse.ok) throw new Error("Errore Upload Immagine");
-      const uploadData = await uploadResponse.json();
-      
-      // 2. AI Generation
-      const aiResponse = await fetch("/api/enhance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: uploadData.secure_url }),
-      });
-      const aiData = await aiResponse.json();
-      if (!aiResponse.ok) throw new Error(aiData.error || "Errore AI");
 
-      setResult(aiData.enhancedImageUrl);
+      if (!uploadResponse.ok) throw new Error("Errore durante il caricamento dell'immagine.");
+
+      const uploadData = await uploadResponse.json();
+      const originalUrl = uploadData.secure_url;
+
+      // 2. APPLICAZIONE FILTRI AI PROFESSIONALI
+      // Inseriamo una stringa di trasformazione nell'URL di Cloudinary.
+      // - e_improve:outdoor : AI specifica per migliorare foto di esterni (luce, dettagli).
+      // - e_vibrance:30 : Aumenta la vivacità dei colori in modo intelligente (non brucia).
+      // - e_contrast:auto : Corregge il contrasto automaticamente.
+      // - q_auto:best : Garantisce la massima qualità possibile.
+      const transformation = "e_improve:outdoor,e_vibrance:30,e_contrast:auto,q_auto:best";
+      
+      // Inseriamo la trasformazione nell'URL dopo "/upload/"
+      const enhancedUrl = originalUrl.replace("/upload/", `/upload/${transformation}/`);
+
+      // Aggiungiamo un piccolo ritardo artificiale per dare un feedback visivo all'utente
+      // (Cloudinary è talmente veloce che sembrerebbe non aver fatto nulla).
+      await new Promise(r => setTimeout(r, 1500));
+
+      setResult(enhancedUrl);
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Qualcosa è andato storto.");
+      setError(err.message || "Si è verificato un errore imprevisto.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Funzione Ritaglio Intelligente
+  // Funzione di Ritaglio e Download
   const cropAndDownload = (aspectRatio: number, filename: string) => {
     if (!resultImageRef.current) return;
     const img = resultImageRef.current;
@@ -107,7 +120,7 @@ export default function FotoAIPage() {
         <Link href="/" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
           <ArrowLeft size={20} className="text-slate-600" />
         </Link>
-        <h1 className="text-xl font-bold">Foto AI (Professional)</h1>
+        <h1 className="text-xl font-bold">Foto AI (Professional Enhance)</h1>
       </header>
 
       <main className="max-w-xl mx-auto px-6 py-8">
@@ -117,7 +130,7 @@ export default function FotoAIPage() {
           </div>
         )}
 
-        {/* Anteprima */}
+        {/* AREA ANTEPRIMA */}
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-8">
           {!image ? (
             <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 gap-4 group">
@@ -126,6 +139,7 @@ export default function FotoAIPage() {
             </div>
           ) : (
             <div className="relative rounded-2xl overflow-hidden min-h-[400px] bg-slate-900 flex items-center justify-center">
+              {/* Immagine con crossOrigin per permettere il ritaglio su canvas */}
               <img 
                 ref={resultImageRef}
                 src={result || image} 
@@ -141,8 +155,8 @@ export default function FotoAIPage() {
               {loading && (
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm z-20">
                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-white font-bold animate-pulse text-lg">Sviluppo Foto...</p>
-                    <p className="text-slate-400 text-sm mt-2">Attendere...</p>
+                    <p className="text-white font-bold animate-pulse text-lg">Ottimizzazione in corso...</p>
+                    <p className="text-slate-400 text-sm mt-2">Analisi luci e colori</p>
                 </div>
               )}
 
@@ -156,7 +170,7 @@ export default function FotoAIPage() {
           <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
         </div>
 
-        {/* Pulsanti */}
+        {/* PULSANTI AZIONE */}
         <div className="space-y-4">
           {!image && (
             <button onClick={() => fileInputRef.current?.click()} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-200">
