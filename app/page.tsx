@@ -8,7 +8,7 @@ export default function Home() {
       {/* HEADER */}
       <header className="px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* LOGO: Quadrato Blu con Scintilla */}
+          {/* LOGO */}
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
             <Sparkles size={18} className="text-white fill-white" />
           </div>
@@ -36,19 +36,19 @@ export default function Home() {
         {/* GRIGLIA CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          {/* CARD 1: FOTO AI (STESSA FOTO - EFFETTO PRIMA/DOPO REALE) */}
+          {/* CARD 1: FOTO AI (Funziona: Stessa stanza, filtro scuro a sinistra) */}
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
               
               <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
-                {/* 1. FOTO "DOPO" (Sotto - Luminosa) */}
+                {/* DOPO (Luminosa) */}
                 <img 
                   src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
                   alt="Dopo" 
                   className="absolute inset-0 w-full h-full object-cover"
                 />
 
-                {/* 2. FOTO "PRIMA" (Sopra - Tagliata a metà e scurita col codice) */}
+                {/* PRIMA (Scura + Filtro) */}
                 <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r-2 border-white/80 z-10">
                     <img 
                       src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
@@ -81,16 +81,16 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* CARD 2: ARREDO (VUOTO vs PIENO) */}
+          {/* CARD 2: ARREDO (NUOVI LINK: Stanza Vuota Chiara vs Stanza Arredata Simile) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 flex">
-               {/* Sinistra: Stanza Vuota */}
+               {/* Sinistra: Vuota (Muro bianco e pavimento) */}
                <div className="w-1/2 h-full overflow-hidden border-r-2 border-white relative">
-                  <img src="https://images.unsplash.com/photo-1594040226829-7f251ab46d80?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Vuota" />
+                  <img src="https://images.unsplash.com/photo-1596238639527-316827083040?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Vuota" />
                </div>
-               {/* Destra: Stanza Arredata (Simile prospettiva) */}
+               {/* Destra: Arredata (Salotto moderno) */}
                <div className="w-1/2 h-full relative">
-                  <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Arredata" />
+                  <img src="https://images.unsplash.com/photo-1567016432779-094069958ea5?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Arredata" />
                </div>
                
                <div className="absolute inset-0 flex items-center justify-center">
@@ -110,7 +110,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 3: VIDEO 360 (VILLA MODERNA) */}
+          {/* CARD 3: VIDEO 360 */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
@@ -135,10 +135,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 4: SOCIAL (GRIGLIA LUXURY) */}
+          {/* CARD 4: SOCIAL (Link Riparati) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 grid grid-cols-2 gap-0.5">
-               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
                <img src="https://images.unsplash.com/photo-1616137466211-f939a420be84?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
                <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
                <img src="https://images.unsplash.com/photo-1615873968403-89e068629265?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
