@@ -2,13 +2,11 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Camera, Download, Sparkles, RefreshCw } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Download, Sparkles, RefreshCw, Monitor, Instagram, CheckCircle2 } from "lucide-react";
 
 export default function FotoAIPage() {
-  // --- CONFIGURAZIONE CLOUDINARY ---
   const CLOUD_NAME = "dfzptsood";
   const UPLOAD_PRESET = "remagic";
-  // -------------------------------------------------------------
 
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -16,8 +14,8 @@ export default function FotoAIPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultImageRef = useRef<HTMLImageElement>(null);
 
-  // Gestione selezione file locale
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -34,70 +32,76 @@ export default function FotoAIPage() {
 
   const startAiMagic = async () => {
     if (!imageFile) return;
-
     setLoading(true);
     setError(null);
 
     try {
-      // 1. PRIMA CARICHIAMO SU CLOUDINARY PER AVERE UN URL PUBBLICO
+      // 1. Upload Cloudinary
       const formData = new FormData();
       formData.append("file", imageFile);
       formData.append("upload_preset", UPLOAD_PRESET);
-
       const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
       });
-
-      if (!uploadResponse.ok) throw new Error("Errore Upload su Cloudinary");
-
+      if (!uploadResponse.ok) throw new Error("Errore Upload Immagine");
       const uploadData = await uploadResponse.json();
-      const cloudinaryUrl = uploadData.secure_url;
-
-      // 2. ORA CHIAMIAMO LA NOSTRA API (LEONARDO) CON L'URL DI CLOUDINARY
-      // Non usiamo più i filtri stupidi, chiamiamo l'AI vera.
+      
+      // 2. Chiamata Leonardo AI
       const aiResponse = await fetch("/api/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: cloudinaryUrl }), // Passiamo "image" come si aspetta route.ts
+        body: JSON.stringify({ image: uploadData.secure_url }),
       });
-
       const aiData = await aiResponse.json();
+      if (!aiResponse.ok) throw new Error(aiData.error || "Errore AI");
 
-      if (!aiResponse.ok) {
-        throw new Error(aiData.error || "Errore durante la generazione AI");
-      }
-
-      // 3. SALVIAMO IL RISULTATO DI LEONARDO
-      if (aiData.enhancedImageUrl) {
-        setResult(aiData.enhancedImageUrl);
-      } else {
-        throw new Error("L'AI non ha restituito l'immagine.");
-      }
+      setResult(aiData.enhancedImageUrl);
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Si è verificato un errore.");
+      setError(err.message || "Qualcosa è andato storto.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Funzione download migliorata
-  const downloadImage = async (url: string, filename: string) => {
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch(e) { 
-        // Fallback se il browser blocca il download diretto
-        window.open(url, '_blank'); 
+  // Funzione Generica di Ritaglio (Crop)
+  const cropAndDownload = (aspectRatio: number, filename: string) => {
+    if (!resultImageRef.current) return;
+    const img = resultImageRef.current;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Calcoliamo le dimensioni target basate sull'aspect ratio richiesto
+    let newWidth = img.naturalWidth;
+    let newHeight = img.naturalWidth / aspectRatio;
+
+    // Se l'altezza calcolata è maggiore dell'immagine reale, dobbiamo ridurre la larghezza
+    if (newHeight > img.naturalHeight) {
+        newHeight = img.naturalHeight;
+        newWidth = newHeight * aspectRatio;
     }
+
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+
+    // Centriamo il ritaglio
+    const startX = (img.naturalWidth - newWidth) / 2;
+    const startY = (img.naturalHeight - newHeight) / 2;
+
+    ctx.drawImage(img, startX, startY, newWidth, newHeight, 0, 0, newWidth, newHeight);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 'image/jpeg', 0.95);
   };
 
   return (
@@ -106,40 +110,42 @@ export default function FotoAIPage() {
         <Link href="/" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
           <ArrowLeft size={20} className="text-slate-600" />
         </Link>
-        <h1 className="text-xl font-bold">Foto AI (Leonardo Engine)</h1>
+        <h1 className="text-xl font-bold">Foto AI (Professional)</h1>
       </header>
 
       <main className="max-w-xl mx-auto px-6 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-bold">
-            {error}
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-bold flex items-center gap-2">
+            ⚠️ {error}
           </div>
         )}
 
+        {/* AREA IMMAGINE */}
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-8">
           {!image ? (
-            <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 gap-4">
-              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center"><Upload size={32} /></div>
-              <p className="font-bold text-slate-700">Carica una foto</p>
+            <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 gap-4 group">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition"><Upload size={32} /></div>
+              <p className="font-bold text-slate-700">Carica Foto (Anche brutta)</p>
             </div>
           ) : (
-            <div className="relative rounded-2xl overflow-hidden h-96 bg-slate-900">
-              {/* Immagine visualizzata senza filtri CSS per preservare i colori */}
+            <div className="relative rounded-2xl overflow-hidden min-h-[400px] bg-slate-900 flex items-center justify-center">
               <img 
+                ref={resultImageRef}
                 src={result || image} 
-                className="w-full h-full object-contain bg-black" 
+                className="w-full h-auto max-h-[600px] object-contain" 
                 alt="Anteprima" 
+                crossOrigin="anonymous"
               />
               
-              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
-                {result ? "DOPO (Leonardo AI)" : "PRIMA"}
+              <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
+                {result ? <><CheckCircle2 size={12} className="text-green-400" /> RISULTATO PRO</> : "ORIGINALE"}
               </div>
 
               {loading && (
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm z-20">
                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-white font-bold animate-pulse text-lg">Rigenerazione Luci...</p>
-                    <p className="text-slate-400 text-sm mt-2">Attendi circa 20 secondi</p>
+                    <p className="text-white font-bold animate-pulse text-lg">Sviluppo Foto...</p>
+                    <p className="text-slate-400 text-sm mt-2">Correzione luci e colori</p>
                 </div>
               )}
 
@@ -153,6 +159,7 @@ export default function FotoAIPage() {
           <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
         </div>
 
+        {/* PULSANTI AZIONE */}
         <div className="space-y-4">
           {!image && (
             <button onClick={() => fileInputRef.current?.click()} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-200">
@@ -162,14 +169,31 @@ export default function FotoAIPage() {
           
           {image && !result && !loading && (
             <button onClick={startAiMagic} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
-              <Sparkles size={24} /> Genera Foto Reale
+              <Sparkles size={24} /> Migliora Foto (Pro)
             </button>
           )}
           
           {result && (
-            <button onClick={() => downloadImage(result!, 'foto-magic-leonardo.jpg')} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-200">
-              <Download size={24} /> Scarica Foto HD
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+                
+                {/* BUTTON 1: PORTALI (16:9) */}
+                <button 
+                  onClick={() => cropAndDownload(16/9, 'foto-portali-16-9.jpg')} 
+                  className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-green-700 transition shadow-lg shadow-green-200"
+                >
+                  <div className="flex items-center gap-2"><Monitor size={20} /> Portali</div>
+                  <span className="text-[10px] opacity-80 font-normal">Formato 16:9</span>
+                </button>
+
+                {/* BUTTON 2: SOCIAL (4:5) */}
+                <button 
+                  onClick={() => cropAndDownload(4/5, 'foto-social-4-5.jpg')} 
+                  className="w-full bg-pink-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-pink-700 transition shadow-lg shadow-pink-200"
+                >
+                   <div className="flex items-center gap-2"><Instagram size={20} /> Social</div>
+                   <span className="text-[10px] opacity-80 font-normal">Formato 4:5</span>
+                </button>
+            </div>
           )}
         </div>
       </main>
