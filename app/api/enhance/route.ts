@@ -60,23 +60,33 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         height: 512,
         width: 768,
-        // modelId RIMOSSO PERCHÉ IN CONFLITTO CON PHOTOREAL
+        // modelId è rimosso perché photoReal sceglie il modello da solo
         prompt: "Award winning interior design photography, vibrant colors, full color photograph, dramatic natural lighting, ultra clean, modern renovation, decluttered, 8k resolution, architectural digest style, bright and airy",
         negative_prompt: "black and white, monochrome, grayscale, dark, shadows, messy, blurry, distortion, low quality, ugly, noise, grain, people",
         init_image_id: imageId,
         init_strength: 0.60, 
-        photoReal: true, // Questo attiva automaticamente il modello giusto
+        
+        // *** LA CORREZIONE È QUI ***
+        alchemy: true,     // Attiviamo Alchemy...
+        photoReal: true,   // ...per poter usare PhotoReal
         photoRealStrength: 0.55,
         num_images: 1
       }),
     });
 
     const genData = await genRes.json();
+    
+    // Controllo errori più robusto
+    if (genData.error) {
+        console.error("❌ Leonardo API Error:", genData.error);
+        throw new Error(genData.error);
+    }
+
     const generationId = genData.sdGenerationJob?.generationId;
 
     if (!generationId) {
-        console.error("❌ Leonardo Error:", genData);
-        throw new Error(genData.error || "Generazione non avviata");
+        console.error("❌ Leonardo No Generation ID:", genData);
+        throw new Error("Generazione non avviata: ID mancante");
     }
 
     // --- FASE 5: Polling ---
@@ -108,7 +118,8 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error("❌ Errore Backend:", error);
+    console.error("❌ Errore Backend:", error.message);
+    // Restituiamo l'errore esatto al frontend così lo vedi nel box rosso
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
