@@ -8,7 +8,7 @@ export default function Home() {
       {/* HEADER */}
       <header className="px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* LOGO */}
+          {/* LOGO: Quadrato Blu con Scintilla */}
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
             <Sparkles size={18} className="text-white fill-white" />
           </div>
@@ -36,32 +36,28 @@ export default function Home() {
         {/* GRIGLIA CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          {/* CARD 1: FOTO AI (Esattamente come il riferimento: 2 foto diverse affiancate) */}
+          {/* CARD 1: FOTO AI (STESSA FOTO - EFFETTO PRIMA/DOPO REALE) */}
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
               
-              {/* CONTENITORE IMMAGINI SPLIT (50% Sinistra - 50% Destra) */}
-              <div className="relative h-48 rounded-2xl overflow-hidden mb-4 flex group-hover:scale-[1.02] transition-transform duration-500">
-                
-                {/* SINISTRA: Cucina Scura/Legno (Prima) */}
-                <div className="w-1/2 h-full border-r-2 border-white relative">
-                   <img 
-                    src="https://images.unsplash.com/photo-1556912173-3db9963ee790?auto=format&fit=crop&w=400&q=80" 
-                    alt="Prima" 
-                    className="w-full h-full object-cover"
-                   />
+              <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
+                {/* 1. FOTO "DOPO" (Sotto - Luminosa) */}
+                <img 
+                  src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
+                  alt="Dopo" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+
+                {/* 2. FOTO "PRIMA" (Sopra - Tagliata a metà e scurita col codice) */}
+                <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r-2 border-white/80 z-10">
+                    <img 
+                      src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
+                      alt="Prima" 
+                      className="absolute inset-0 w-[200%] max-w-none h-full object-cover filter brightness-75 contrast-125 sepia-[0.3]" 
+                    />
                 </div>
 
-                {/* DESTRA: Cucina Bianca/Moderna (Dopo) */}
-                <div className="w-1/2 h-full relative">
-                   <img 
-                    src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80" 
-                    alt="Dopo" 
-                    className="w-full h-full object-cover"
-                   />
-                </div>
-
-                {/* BADGES */}
+                {/* Badge */}
                 <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur text-indigo-700 text-[10px] font-bold px-3 py-1 rounded-full border border-white/20 shadow-sm uppercase tracking-wide">
                   Migliora Foto
                 </div>
@@ -73,13 +69,11 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* TESTO */}
               <div className="flex flex-col grow">
                 <h3 className="font-bold text-xl text-slate-900 mb-2">Foto AI</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
                   Raddrizza, illumina e correggi in un click.
                 </p>
-                
                 <div className="mt-auto flex items-center gap-2 text-indigo-600 font-bold text-sm group-hover:gap-3 transition-all">
                   AVVIA MAGIA <ArrowRight size={16} />
                 </div>
@@ -87,19 +81,18 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* CARD 2: ARREDO (Camera Vuota vs Arredata) */}
+          {/* CARD 2: ARREDO (VUOTO vs PIENO) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-4 flex">
-               {/* Sinistra: Camera Vuota */}
-               <div className="w-1/2 h-full border-r-2 border-white relative">
-                  <img src="https://images.unsplash.com/photo-1594040226829-7f251ab46d80?auto=format&fit=crop&w=400&q=80" className="w-full h-full object-cover" alt="Vuota" />
+            <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 flex">
+               {/* Sinistra: Stanza Vuota */}
+               <div className="w-1/2 h-full overflow-hidden border-r-2 border-white relative">
+                  <img src="https://images.unsplash.com/photo-1594040226829-7f251ab46d80?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Vuota" />
                </div>
-               {/* Destra: Camera Arredata */}
+               {/* Destra: Stanza Arredata (Simile prospettiva) */}
                <div className="w-1/2 h-full relative">
-                  <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=400&q=80" className="w-full h-full object-cover" alt="Arredata" />
+                  <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Arredata" />
                </div>
                
-               {/* Icona centrale */}
                <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-white/30 backdrop-blur-md p-2 rounded-full border border-white/50">
                     <LayoutGrid size={20} className="text-white drop-shadow-md" />
@@ -117,11 +110,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 3: VIDEO 360 */}
+          {/* CARD 3: VIDEO 360 (VILLA MODERNA) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
-                src="https://images.unsplash.com/photo-1600596542815-e495e91f0747?auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?q=80&w=800&auto=format&fit=crop" 
                 alt="Villa Esterna"
                 className="w-full h-full object-cover opacity-90"
               />
@@ -142,13 +135,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 4: SOCIAL (Griglia 4 Immagini) */}
+          {/* CARD 4: SOCIAL (GRIGLIA LUXURY) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 grid grid-cols-2 gap-0.5">
-               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1616137466211-f939a420be84?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1615873968403-89e068629265?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                   <div className="bg-white p-2 rounded-xl shadow-lg">
                     <Instagram size={20} className="text-slate-900" />
