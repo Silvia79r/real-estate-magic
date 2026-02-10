@@ -44,8 +44,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- GENERAZIONE FINALMENTE STABILE ---
-    console.log("🎨 4. Avvio PhotoReal Safe Mode...");
+    // --- GENERAZIONE CONSERVATIVA E SICURA ---
+    console.log("🎨 4. Avvio Miglioramento Sicuro...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -55,39 +55,34 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // Prompt focalizzato su LUCE e CIELO, non sulla struttura.
-        prompt: "Luxury real estate photography, sunny day, clear blue sky, soft natural lighting, vibrant colors, sharp focus, 8k, magazine style. No structural changes.",
+        // Prompt che chiede solo pulizia e luce
+        prompt: "A high-resolution, professional photograph of this exact scene. Improved lighting, sharp details, vibrant colors, clear sky. The structure and objects are unchanged.",
         
-        negative_prompt: "rain, cloudy, gray sky, distortion, crooked lines, blurry, artifacts, low quality, dark, night, changing geometry, adding objects",
+        // Negative prompt per bloccare le invenzioni
+        negative_prompt: "altered geometry, new objects, distorted, blurry, low quality, changing structures, moving objects, different composition, deformed, new buildings, villa",
         
         init_image_id: imageId,
         
-        // *** IL PUNTO CRUCIALE ***
-        // 0.30 è il punto di equilibrio. 
-        // Cambia il meteo (da pioggia a sole) ma NON sposta i muri.
-        init_strength: 0.30, 
+        // *** IL SEGRETO ***
+        // Spegniamo tutto ciò che è "creativo".
+        alchemy: false,
+        photoReal: false,
+        promptMagic: false,
+
+        // FORZA BASSISSIMA: 0.25
+        // Sufficiente per togliere il grigio e dare luce, ma non per inventare ville.
+        init_strength: 0.25, 
         
-        // Configurazioni per la massima qualità estetica
-        alchemy: true,
-        photoReal: true,
-        photoRealStrength: 0.50, // Realismo bilanciato
-        presetStyle: "DYNAMIC", // Aumenta la vivacità dei colori
-        
-        num_images: 1
-        // NOTA: Nessun modelId specificato, così PhotoReal non va in errore.
+        num_images: 1,
+        // Usiamo un modello generico e stabile
+        modelId: "ac614f96-1082-45bf-be9d-757f2d31c174" // Leonardo Diffusion
       }),
     });
 
     const genData = await genRes.json();
-    
-    // Gestione errori dettagliata
-    if (genData.error) {
-        console.error("❌ Leonardo Error:", genData.error);
-        throw new Error(genData.error);
-    }
-    
+    if (genData.error) throw new Error(genData.error);
     const generationId = genData.sdGenerationJob?.generationId;
-    if (!generationId) throw new Error("Generazione non avviata: ID mancante");
+    if (!generationId) throw new Error("Generazione non avviata");
 
     // Polling
     let finalImageUrl = null;
@@ -100,13 +95,8 @@ export async function POST(request: Request) {
       });
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
-      
-      if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.generated_images[0].url;
-      } else if (job && job.status === "FAILED") {
-        console.error("Fallimento Leonardo:", job);
-        throw new Error("Leonardo ha fallito la generazione");
-      }
+      if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
+      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
