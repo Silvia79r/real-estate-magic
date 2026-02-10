@@ -36,14 +36,14 @@ export default function Home() {
         {/* GRIGLIA CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          {/* CARD 1: FOTO AI (Stessa stanza, filtro scuro a sx per effetto Prima/Dopo) */}
+          {/* CARD 1: FOTO AI (Stessa foto con filtro scuro a sx) */}
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
               
               <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
                 {/* DOPO (Luminosa) */}
                 <img 
-                  src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
+                  src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80" 
                   alt="Dopo" 
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -51,7 +51,7 @@ export default function Home() {
                 {/* PRIMA (Scura + Filtro) */}
                 <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r-2 border-white/80 z-10">
                     <img 
-                      src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop" 
+                      src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80" 
                       alt="Prima" 
                       className="absolute inset-0 w-[200%] max-w-none h-full object-cover filter brightness-75 contrast-125 sepia-[0.3]" 
                     />
@@ -82,23 +82,22 @@ export default function Home() {
           </Link>
 
           {/* CARD 2: ARREDO (VUOTA A SX - PIENA A DX) */}
-          {/* Ho usato due foto dello stesso fotografo con prospettiva identica */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 flex">
                
-               {/* Sinistra: Stanza Vuota (Parete bianca e parquet) */}
+               {/* Sinistra: Stanza Vuota */}
                <div className="w-1/2 h-full overflow-hidden border-r-2 border-white relative">
                   <img 
-                    src="https://images.unsplash.com/photo-1502005229762-cf1e2a862d43?q=80&w=400&auto=format&fit=crop" 
+                    src="https://images.unsplash.com/photo-1594040226829-7f251ab46d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
                     className="w-full h-full object-cover" 
                     alt="Stanza Vuota" 
                   />
                </div>
                
-               {/* Destra: Stanza Arredata (Stesso stile, stesso pavimento) */}
+               {/* Destra: Stanza Arredata (Simile) */}
                <div className="w-1/2 h-full relative">
                   <img 
-                    src="https://images.unsplash.com/photo-1502005097973-1040051285bb?q=80&w=400&auto=format&fit=crop" 
+                    src="https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
                     className="w-full h-full object-cover" 
                     alt="Stanza Arredata" 
                   />
@@ -125,7 +124,7 @@ export default function Home() {
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <img 
-                src="https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?q=80&w=800&auto=format&fit=crop" 
+                src="https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
                 alt="Villa Esterna"
                 className="w-full h-full object-cover opacity-90"
               />
@@ -146,13 +145,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 4: SOCIAL (Griglia fissa senza errori) */}
+          {/* CARD 4: SOCIAL (Link Riparati) */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
             <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 grid grid-cols-2 gap-0.5">
-               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
-               <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=300&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1616137466211-f939a420be84?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
+               <img src="https://images.unsplash.com/photo-1615873968403-89e068629265?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                   <div className="bg-white p-2 rounded-xl shadow-lg">
                     <Instagram size={20} className="text-slate-900" />
