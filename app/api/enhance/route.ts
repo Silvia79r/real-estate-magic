@@ -44,8 +44,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- GENERAZIONE (IL SEGRETO È QUI) ---
-    console.log("🎨 4. Applicazione filtro 'Sunny Day Real Estate'...");
+    // --- GENERAZIONE RISPETTOSA DEL FORMATO ---
+    console.log("🎨 4. Applicazione filtro 'Sunny Day'...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -55,28 +55,23 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // PROMPT SPECIFICO PER IMMOBILIARE:
-        // - "sunny day, clear blue sky": Forza il bel tempo
-        // - "straight vertical lines": Raddrizza la prospettiva
-        // - "interior design magazine": Alza la qualità
-        prompt: "Professional real estate photography, sunny day, clear blue sky, perfect vertical lines, wide angle lens, warm sunlight, vibrant colors, hdr, high dynamic range, sharp focus, clean, cozy, luxury living, 8k resolution",
+        // RIMOSSO WIDTH E HEIGHT! 
+        // Ora Leonardo userà le dimensioni dell'immagine originale (imageId)
         
-        // NEGATIVE PROMPT (COSA EVITARE):
-        // Evitiamo pioggia, cielo grigio, distorsioni e muri storti
-        negative_prompt: "rain, overcast, gray sky, crooked lines, slanted walls, lens distortion, fish eye, messy, blur, noise, dark shadows, low quality, black and white",
+        prompt: "Real estate photography, sunny day, clear blue sky, natural lighting, vibrant colors, sharp focus, 8k resolution, wide angle lens",
+        negative_prompt: "rain, overcast, grey sky, fog, blur, distortion, low quality, artifacts, text, watermark, cropping, zoomed in, deformed structures",
         
         init_image_id: imageId,
         
-        // FORZA: 0.55
-        // Abbastanza alta da cambiare il cielo (da grigio a blu).
-        // Abbastanza bassa da non inventare finestre che non esistono.
-        init_strength: 0.55, 
+        // FORZA: 0.35
+        // Ideale per cambiare il cielo e la luce SENZA toccare i vasi o i muri
+        init_strength: 0.35, 
         
-        alchemy: true,     // Motore Alta Qualità
-        photoReal: true,   // Realismo
-        photoRealStrength: 0.50, // Bilanciamento realismo
+        alchemy: true,
+        photoReal: true,
+        photoRealStrength: 0.45,
         num_images: 1,
-        presetStyle: "DYNAMIC" // Stile vivido e luminoso
+        presetStyle: "DYNAMIC"
       }),
     });
 
