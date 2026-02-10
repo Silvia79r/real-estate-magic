@@ -32,7 +32,7 @@ export default function FotoAIPage() {
     }
   };
 
-  // --- AI ENHANCEMENT SICURO (NO ADD-ONS) ---
+  // --- AI ENHANCEMENT SICURO (Versione Aggressiva HDR) ---
   const startAiMagic = async () => {
     if (!imageFile) return;
     setLoading(true);
@@ -54,19 +54,19 @@ export default function FotoAIPage() {
       const uploadData = await uploadResponse.json();
       const originalUrl = uploadData.secure_url;
 
-      // 2. APPLICAZIONE FILTRI STANDARD (GARANTITI)
+      // 2. APPLICAZIONE FILTRI STANDARD (POTENZIATI)
       // Usiamo solo filtri nativi che non richiedono abbonamenti extra.
-      // e_fill_light:50 -> Illumina le ombre (effetto flash naturale)
-      // e_vibrance:60 -> Colori molto più vivi (rimuove il grigio)
-      // e_contrast:20 -> Più profondità
-      // e_sharpen:100 -> Massima nitidezza (effetto HD)
-      const transformation = "e_fill_light:50,e_vibrance:60,e_contrast:20,e_sharpen:100,q_auto:best";
+      // e_gamma:80 -> Aumenta la luminosità globale (effetto sole)
+      // e_contrast:60 -> Contrasto molto forte per dare profondità
+      // e_vibrance:100 -> Vividezza al massimo per i colori spenti
+      // e_saturation:30 -> Boost addizionale ai colori
+      // e_sharpen:150 -> Nitidezza estrema per dettagli croccanti
+      const transformation = "e_gamma:80,e_contrast:60,e_vibrance:100,e_saturation:30,e_sharpen:150,q_auto:best";
       
       // Inseriamo la trasformazione nell'URL dopo "/upload/"
       const enhancedUrl = originalUrl.replace("/upload/", `/upload/${transformation}/`);
 
-      // Aggiungiamo un piccolo ritardo artificiale (1 secondo) per dare 
-      // il tempo all'utente di vedere l'animazione "Ottimizzazione..."
+      // Aggiungiamo un piccolo ritardo artificiale (1 secondo) per feedback visivo
       await new Promise(r => setTimeout(r, 1000));
 
       setResult(enhancedUrl);
