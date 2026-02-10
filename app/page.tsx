@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Zap, ArrowRight, Lock, Sparkles, Video, Instagram, Rotate3d, LayoutGrid } from "lucide-react";
+import { Zap, ArrowRight, Lock, Sparkles, Rotate3d, LayoutGrid } from "lucide-react";
 
 export default function Home() {
   return (
@@ -9,7 +9,6 @@ export default function Home() {
       {/* HEADER */}
       <header className="px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* LOGO */}
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
             <Sparkles size={18} className="text-white fill-white" />
           </div>
@@ -37,11 +36,11 @@ export default function Home() {
         {/* GRIGLIA CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          {/* CARD 1: FOTO AI (Pesca foto-ai.png dalla cartella public) */}
+          {/* CARD 1: FOTO AI */}
           <Link href="/foto-ai" className="group block">
             <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
-              
-              <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
+              {/* Ho sostituito h-48 con aspect-[4/3] h-auto per non tagliare l'immagine */}
+              <div className="relative aspect-[4/3] h-auto rounded-2xl overflow-hidden mb-4 bg-slate-100 group-hover:scale-[1.02] transition-transform duration-500">
                 <Image
                   src="/foto-ai.png"
                   alt="Migliora Foto Prima e Dopo"
@@ -63,9 +62,10 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* CARD 2: ARREDO (Pesca arredo.png dalla cartella public) */}
+          {/* CARD 2: ARREDO */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+            {/* Applicato lo stesso aspect ratio per uniformità */}
+            <div className="relative aspect-[4/3] h-auto rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <Image
                  src="/arredo.png"
                  alt="Home Staging Vuoto vs Pieno"
@@ -90,9 +90,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 3: VIDEO 360 (Pesca video-360.png dalla cartella public) */}
+          {/* CARD 3: VIDEO 360 */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+            {/* Applicato lo stesso aspect ratio per uniformità */}
+            <div className="relative aspect-[4/3] h-auto rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <Image
                 src="/video-360.png"
                 alt="Villa Esterna 360"
@@ -111,9 +112,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CARD 4: SOCIAL (Pesca social.png dalla cartella public) */}
+          {/* CARD 4: SOCIAL */}
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm opacity-60 h-full flex flex-col relative overflow-hidden grayscale cursor-not-allowed">
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+            {/* Applicato lo stesso aspect ratio per uniformità */}
+            <div className="relative aspect-[4/3] h-auto rounded-2xl overflow-hidden mb-4 bg-slate-100">
                <Image
                  src="/social.png"
                  alt="Griglia Social"
