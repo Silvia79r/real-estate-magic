@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         width: 768,
         modelId: "b24e16ff-06e3-43eb-8d33-4416c2d75876", // Modello PhotoReal
         prompt: "Award winning interior design photography, vibrant colors, full color photograph, dramatic natural lighting, ultra clean, modern renovation, decluttered, 8k resolution, architectural digest style, bright and airy",
-        negative_prompt: "dark, shadows, messy, blurry, distortion, low quality, ugly, noise, grain, people",
+        negative_prompt: "black and white, monochrome, grayscale, dark, shadows, messy, blurry, distortion, low quality, ugly, noise, grain, people",
         init_image_id: imageId,
         init_strength: 0.60, // FORZA: 0.60 cambia abbastanza luci e stile, ma mantiene i mobili
         photoReal: true,
