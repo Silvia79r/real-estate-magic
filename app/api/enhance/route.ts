@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+// Impedisce a Next.js di salvare risposte vecchie nella cache
 export const dynamic = "force-dynamic";
 
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
@@ -13,14 +14,14 @@ export async function POST(request: Request) {
 
     console.log("🚀 1. Analisi Immagine:", image);
 
-    // Scarica immagine originale
+    // Scarica e prepara l'immagine
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
 
-    // Init Upload (Serve anche per l'Upscaler)
+    // Init Upload
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -44,11 +45,10 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- NUOVO APPROCCIO: UPSCALER PURO ---
-    console.log("🎨 4. Avvio Universal Upscaler (Miglioramento Sicuro)...");
+    // --- GENERAZIONE CONSERVATIVA (MIGLIORAMENTO SICURO) ---
+    console.log("🎨 4. Avvio Generazione Conservativa...");
     
-    // Non usiamo più "generations", ma "upscale".
-    const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/upscale", {
+    const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
       headers: {
         accept: "application/json",
@@ -56,15 +56,28 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // L'immagine di partenza
+        // Prompt focalizzato SOLO sulla qualità, non sul contenuto.
+        prompt: "A professional, high-resolution photograph of this exact scene. Improved lighting, sharp details, vibrant colors, clear sky. No structural changes.",
+        
+        // Negative prompt per evitare deformazioni e invenzioni.
+        negative_prompt: "altered geometry, new objects, distorted, blurry, low quality, changing structures, moving objects, different composition, deformed",
+        
         init_image_id: imageId,
-        // Tipo di upscale: "UNIVERSAL" è quello generico e sicuro.
-        upscale_type: "UNIVERSAL", 
-        // Forza: da 1 a 10. 
-        // 7 è un buon compromesso per un miglioramento deciso ma che non inventa.
-        strength: 7, 
-        // Stile: "PHOTOGRAPHY" per foto realistiche.
-        style: "PHOTOGRAPHY"
+        
+        // MODELLO: Usiamo Leonardo Diffusion XL, solido e affidabile.
+        modelId: "1e60896f-3c26-4296-8ecc-53e2a9c699a4", 
+
+        // FORZA: BASSISSIMA (0.15).
+        // Questo è il segreto. 0.15 significa "Mantieni l'85% dell'immagine originale".
+        // È sufficiente per pulire il rumore e migliorare la luce, ma non per spostare i muri.
+        init_strength: 0.15, 
+        
+        num_images: 1,
+        
+        // Disabilitiamo le funzioni "creative" avanzate per sicurezza.
+        alchemy: false,
+        photoReal: false,
+        promptMagic: false
       }),
     });
 
@@ -73,10 +86,10 @@ export async function POST(request: Request) {
     const generationId = genData.sdGenerationJob?.generationId;
     if (!generationId) throw new Error("Generazione non avviata");
 
-    // Polling (l'Upscaler è più veloce, max 30 secondi)
+    // Polling
     let finalImageUrl = null;
     let attempts = 0;
-    while (!finalImageUrl && attempts < 30) {
+    while (!finalImageUrl && attempts < 60) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
       const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
@@ -85,7 +98,7 @@ export async function POST(request: Request) {
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
       if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
-      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito l'upscale");
+      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
