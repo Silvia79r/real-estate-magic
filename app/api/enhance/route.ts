@@ -7,7 +7,6 @@ const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 
 export async function POST(request: Request) {
   try {
-    // Leggiamo "image" perché il tuo frontend manda quello (l'URL di Cloudinary)
     const { image } = await request.json();
 
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
@@ -15,19 +14,16 @@ export async function POST(request: Request) {
 
     console.log("🚀 1. Inizio processo Leonardo per:", image);
 
-    // --- FASE 1: Scarichiamo l'immagine originale da Cloudinary ---
+    // --- FASE 1: Scarica immagine originale ---
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
-
-    // --- FASE CRITICA: Determinare l'estensione CORRETTA ---
-    // Se l'URL è di Cloudinary, spesso non ha .jpg alla fine. Usiamo il MIME Type.
-    let fileExtension = 'jpg'; // Default
+    
+    // Rilevamento estensione
+    let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
-    
-    console.log(`📦 Estensione rilevata: ${fileExtension}`);
 
-    // --- FASE 2: Otteniamo l'URL di upload da Leonardo ---
+    // --- FASE 2: Init Upload ---
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -35,37 +31,25 @@ export async function POST(request: Request) {
         "content-type": "application/json",
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
-      body: JSON.stringify({ extension: fileExtension }), // Usiamo l'estensione corretta
+      body: JSON.stringify({ extension: fileExtension }),
     });
 
     const initData = await initImageRes.json();
-    
-    // CONTROLLO AGGIUNTIVO: Se Leonardo non ci dà l'URL di upload, mostriamo l'errore vero.
-    if (!initData.uploadInitImage) {
-      console.error("❌ Errore Init Leonardo (Risposta API):", initData);
-      throw new Error(initData.error || "Leonardo ha rifiutato l'upload (estensione non supportata?)");
-    }
-
+    if (!initData.uploadInitImage) throw new Error(initData.error || "Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
-    // --- FASE 3: Carichiamo fisicamente l'immagine su Leonardo ---
+    // --- FASE 3: Upload fisico ---
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
     formData.append("file", imageBlob);
 
-    const uploadRes = await fetch(uploadUrl, {
-      method: "POST",
-      body: formData,
-    });
+    const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
+    if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    if (!uploadRes.ok) {
-      console.error("❌ Fallito upload su S3 di Leonardo:", await uploadRes.text());
-      throw new Error("Fallito caricamento immagine su server Leonardo");
-    }
-
-    // --- FASE 4: Avviamo la Generazione (MIGLIORA FOTO) ---
+    // --- FASE 4: Generazione (MIGLIORA FOTO) ---
     console.log("🎨 4. Avvio generazione AI...");
+    
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
       headers: {
@@ -76,12 +60,12 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         height: 512,
         width: 768,
-        modelId: "b24e16ff-06e3-43eb-8d33-4416c2d75876", // Modello PhotoReal
+        // modelId RIMOSSO PERCHÉ IN CONFLITTO CON PHOTOREAL
         prompt: "Award winning interior design photography, vibrant colors, full color photograph, dramatic natural lighting, ultra clean, modern renovation, decluttered, 8k resolution, architectural digest style, bright and airy",
         negative_prompt: "black and white, monochrome, grayscale, dark, shadows, messy, blurry, distortion, low quality, ugly, noise, grain, people",
         init_image_id: imageId,
-        init_strength: 0.65, // FORZA: 0.65 = cambiamento netto, ma mantiene i mobili
-        photoReal: true,
+        init_strength: 0.60, 
+        photoReal: true, // Questo attiva automaticamente il modello giusto
         photoRealStrength: 0.55,
         num_images: 1
       }),
@@ -90,18 +74,17 @@ export async function POST(request: Request) {
     const genData = await genRes.json();
     const generationId = genData.sdGenerationJob?.generationId;
 
-    // QUESTO È L'ERRORE CHE VEDI ORA. Se Leonardo non ci dà l'ID, mostriamo cosa ci ha risposto.
     if (!generationId) {
-        console.error("❌ Leonardo ha rifiutato la generazione:", genData);
-        throw new Error(genData.error || "Generazione non avviata (Nessun ID ricevuto)");
+        console.error("❌ Leonardo Error:", genData);
+        throw new Error(genData.error || "Generazione non avviata");
     }
 
-    // --- FASE 5: Polling (Aspettiamo che Leonardo finisca) ---
+    // --- FASE 5: Polling ---
     console.log("⏳ 5. In attesa del risultato...");
     let finalImageUrl = null;
     let attempts = 0;
 
-    while (!finalImageUrl && attempts < 60) { // Max 120 secondi (aumentato per sicurezza)
+    while (!finalImageUrl && attempts < 60) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
       const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
@@ -109,15 +92,16 @@ export async function POST(request: Request) {
       });
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
-      if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
-      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
+      
+      if (job && job.status === "COMPLETE") {
+        finalImageUrl = job.generated_images[0].url;
+      } else if (job && job.status === "FAILED") {
+        throw new Error("Leonardo ha fallito la generazione");
+      }
     }
 
-    if (!finalImageUrl) throw new Error("Timeout: Leonardo ci sta mettendo troppo");
+    if (!finalImageUrl) throw new Error("Timeout Leonardo");
 
-    console.log("✅ Finito! URL:", finalImageUrl);
-
-    // Rispondiamo al frontend con l'URL vero
     return NextResponse.json({
       enhancedImageUrl: finalImageUrl,
       copy: { it: "Ecco la tua nuova foto migliorata con AI." } 
@@ -125,9 +109,6 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("❌ Errore Backend:", error);
-    return NextResponse.json(
-      { error: error.message || "Errore sconosciuto durante il processo" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
