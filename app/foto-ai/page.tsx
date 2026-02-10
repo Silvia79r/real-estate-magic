@@ -32,7 +32,7 @@ export default function FotoAIPage() {
     }
   };
 
-  // --- NUOVA LOGICA: AI ENHANCEMENT DI CLOUDINARY ---
+  // --- AI ENHANCEMENT SICURO (NO ADD-ONS) ---
   const startAiMagic = async () => {
     if (!imageFile) return;
     setLoading(true);
@@ -54,20 +54,20 @@ export default function FotoAIPage() {
       const uploadData = await uploadResponse.json();
       const originalUrl = uploadData.secure_url;
 
-      // 2. APPLICAZIONE FILTRI AI PROFESSIONALI
-      // Inseriamo una stringa di trasformazione nell'URL di Cloudinary.
-      // - e_improve:outdoor : AI specifica per migliorare foto di esterni (luce, dettagli).
-      // - e_vibrance:30 : Aumenta la vivacità dei colori in modo intelligente (non brucia).
-      // - e_contrast:auto : Corregge il contrasto automaticamente.
-      // - q_auto:best : Garantisce la massima qualità possibile.
-      const transformation = "e_improve:outdoor,e_vibrance:30,e_contrast:auto,q_auto:best";
+      // 2. APPLICAZIONE FILTRI STANDARD (GARANTITI)
+      // Usiamo solo filtri nativi che non richiedono abbonamenti extra.
+      // e_fill_light:50 -> Illumina le ombre (effetto flash naturale)
+      // e_vibrance:60 -> Colori molto più vivi (rimuove il grigio)
+      // e_contrast:20 -> Più profondità
+      // e_sharpen:100 -> Massima nitidezza (effetto HD)
+      const transformation = "e_fill_light:50,e_vibrance:60,e_contrast:20,e_sharpen:100,q_auto:best";
       
       // Inseriamo la trasformazione nell'URL dopo "/upload/"
       const enhancedUrl = originalUrl.replace("/upload/", `/upload/${transformation}/`);
 
-      // Aggiungiamo un piccolo ritardo artificiale per dare un feedback visivo all'utente
-      // (Cloudinary è talmente veloce che sembrerebbe non aver fatto nulla).
-      await new Promise(r => setTimeout(r, 1500));
+      // Aggiungiamo un piccolo ritardo artificiale (1 secondo) per dare 
+      // il tempo all'utente di vedere l'animazione "Ottimizzazione..."
+      await new Promise(r => setTimeout(r, 1000));
 
       setResult(enhancedUrl);
 
@@ -146,6 +146,7 @@ export default function FotoAIPage() {
                 className="w-full h-auto max-h-[600px] object-contain" 
                 alt="Anteprima" 
                 crossOrigin="anonymous"
+                onError={() => setError("Errore visualizzazione immagine. Riprova.")}
               />
               
               <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
