@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Impedisce a Next.js di salvare risposte vecchie nella cache
 export const dynamic = "force-dynamic";
 
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
@@ -45,8 +44,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- GENERAZIONE CONSERVATIVA (MIGLIORAMENTO SICURO) ---
-    console.log("🎨 4. Avvio Generazione Conservativa...");
+    // --- GENERAZIONE FINALMENTE STABILE ---
+    console.log("🎨 4. Avvio PhotoReal Safe Mode...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -56,35 +55,39 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // Prompt focalizzato SOLO sulla qualità, non sul contenuto.
-        prompt: "A professional, high-resolution photograph of this exact scene. Improved lighting, sharp details, vibrant colors, clear sky. No structural changes.",
+        // Prompt focalizzato su LUCE e CIELO, non sulla struttura.
+        prompt: "Luxury real estate photography, sunny day, clear blue sky, soft natural lighting, vibrant colors, sharp focus, 8k, magazine style. No structural changes.",
         
-        // Negative prompt per evitare deformazioni e invenzioni.
-        negative_prompt: "altered geometry, new objects, distorted, blurry, low quality, changing structures, moving objects, different composition, deformed",
+        negative_prompt: "rain, cloudy, gray sky, distortion, crooked lines, blurry, artifacts, low quality, dark, night, changing geometry, adding objects",
         
         init_image_id: imageId,
         
-        // MODELLO: Usiamo Leonardo Diffusion XL, solido e affidabile.
-        modelId: "1e60896f-3c26-4296-8ecc-53e2a9c699a4", 
-
-        // FORZA: BASSISSIMA (0.15).
-        // Questo è il segreto. 0.15 significa "Mantieni l'85% dell'immagine originale".
-        // È sufficiente per pulire il rumore e migliorare la luce, ma non per spostare i muri.
-        init_strength: 0.15, 
+        // *** IL PUNTO CRUCIALE ***
+        // 0.30 è il punto di equilibrio. 
+        // Cambia il meteo (da pioggia a sole) ma NON sposta i muri.
+        init_strength: 0.30, 
         
-        num_images: 1,
+        // Configurazioni per la massima qualità estetica
+        alchemy: true,
+        photoReal: true,
+        photoRealStrength: 0.50, // Realismo bilanciato
+        presetStyle: "DYNAMIC", // Aumenta la vivacità dei colori
         
-        // Disabilitiamo le funzioni "creative" avanzate per sicurezza.
-        alchemy: false,
-        photoReal: false,
-        promptMagic: false
+        num_images: 1
+        // NOTA: Nessun modelId specificato, così PhotoReal non va in errore.
       }),
     });
 
     const genData = await genRes.json();
-    if (genData.error) throw new Error(genData.error);
+    
+    // Gestione errori dettagliata
+    if (genData.error) {
+        console.error("❌ Leonardo Error:", genData.error);
+        throw new Error(genData.error);
+    }
+    
     const generationId = genData.sdGenerationJob?.generationId;
-    if (!generationId) throw new Error("Generazione non avviata");
+    if (!generationId) throw new Error("Generazione non avviata: ID mancante");
 
     // Polling
     let finalImageUrl = null;
@@ -97,8 +100,13 @@ export async function POST(request: Request) {
       });
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
-      if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
-      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
+      
+      if (job && job.status === "COMPLETE") {
+        finalImageUrl = job.generated_images[0].url;
+      } else if (job && job.status === "FAILED") {
+        console.error("Fallimento Leonardo:", job);
+        throw new Error("Leonardo ha fallito la generazione");
+      }
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
