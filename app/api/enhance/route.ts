@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Impedisce a Next.js di salvare risposte vecchie nella cache
 export const dynamic = "force-dynamic";
 
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
@@ -10,20 +9,18 @@ export async function POST(request: Request) {
     const { image } = await request.json();
 
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
-    if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo nel file .env" }, { status: 500 });
+    if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 1. Inizio processo Leonardo per:", image);
+    console.log("🚀 1. Analisi Immagine:", image);
 
-    // --- FASE 1: Scarica immagine originale ---
+    // Scarica e prepara l'immagine
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
-    
-    // Rilevamento estensione
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
 
-    // --- FASE 2: Init Upload ---
+    // Init Upload
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -38,7 +35,7 @@ export async function POST(request: Request) {
     if (!initData.uploadInitImage) throw new Error(initData.error || "Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
-    // --- FASE 3: Upload fisico ---
+    // Upload Fisico
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
@@ -47,8 +44,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- FASE 4: Generazione (MIGLIORA FOTO) ---
-    console.log("🎨 4. Avvio generazione AI...");
+    // --- GENERAZIONE (IL SEGRETO È QUI) ---
+    console.log("🎨 4. Applicazione filtro 'Sunny Day Real Estate'...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -58,42 +55,39 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        height: 512,
-        width: 768,
-        // modelId è rimosso perché photoReal sceglie il modello da solo
-        prompt: "Award winning interior design photography, vibrant colors, full color photograph, dramatic natural lighting, ultra clean, modern renovation, decluttered, 8k resolution, architectural digest style, bright and airy",
-        negative_prompt: "black and white, monochrome, grayscale, dark, shadows, messy, blurry, distortion, low quality, ugly, noise, grain, people",
-        init_image_id: imageId,
-        init_strength: 0.60, 
+        // PROMPT SPECIFICO PER IMMOBILIARE:
+        // - "sunny day, clear blue sky": Forza il bel tempo
+        // - "straight vertical lines": Raddrizza la prospettiva
+        // - "interior design magazine": Alza la qualità
+        prompt: "Professional real estate photography, sunny day, clear blue sky, perfect vertical lines, wide angle lens, warm sunlight, vibrant colors, hdr, high dynamic range, sharp focus, clean, cozy, luxury living, 8k resolution",
         
-        // *** LA CORREZIONE È QUI ***
-        alchemy: true,     // Attiviamo Alchemy...
-        photoReal: true,   // ...per poter usare PhotoReal
-        photoRealStrength: 0.55,
-        num_images: 1
+        // NEGATIVE PROMPT (COSA EVITARE):
+        // Evitiamo pioggia, cielo grigio, distorsioni e muri storti
+        negative_prompt: "rain, overcast, gray sky, crooked lines, slanted walls, lens distortion, fish eye, messy, blur, noise, dark shadows, low quality, black and white",
+        
+        init_image_id: imageId,
+        
+        // FORZA: 0.55
+        // Abbastanza alta da cambiare il cielo (da grigio a blu).
+        // Abbastanza bassa da non inventare finestre che non esistono.
+        init_strength: 0.55, 
+        
+        alchemy: true,     // Motore Alta Qualità
+        photoReal: true,   // Realismo
+        photoRealStrength: 0.50, // Bilanciamento realismo
+        num_images: 1,
+        presetStyle: "DYNAMIC" // Stile vivido e luminoso
       }),
     });
 
     const genData = await genRes.json();
-    
-    // Controllo errori più robusto
-    if (genData.error) {
-        console.error("❌ Leonardo API Error:", genData.error);
-        throw new Error(genData.error);
-    }
-
+    if (genData.error) throw new Error(genData.error);
     const generationId = genData.sdGenerationJob?.generationId;
+    if (!generationId) throw new Error("Generazione non avviata");
 
-    if (!generationId) {
-        console.error("❌ Leonardo No Generation ID:", genData);
-        throw new Error("Generazione non avviata: ID mancante");
-    }
-
-    // --- FASE 5: Polling ---
-    console.log("⏳ 5. In attesa del risultato...");
+    // Polling
     let finalImageUrl = null;
     let attempts = 0;
-
     while (!finalImageUrl && attempts < 60) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
@@ -102,24 +96,18 @@ export async function POST(request: Request) {
       });
       const statusData = await statusRes.json();
       const job = statusData.generations_by_pk;
-      
-      if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.generated_images[0].url;
-      } else if (job && job.status === "FAILED") {
-        throw new Error("Leonardo ha fallito la generazione");
-      }
+      if (job && job.status === "COMPLETE") finalImageUrl = job.generated_images[0].url;
+      else if (job && job.status === "FAILED") throw new Error("Leonardo ha fallito la generazione");
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
 
     return NextResponse.json({
       enhancedImageUrl: finalImageUrl,
-      copy: { it: "Ecco la tua nuova foto migliorata con AI." } 
     });
 
   } catch (error: any) {
     console.error("❌ Errore Backend:", error.message);
-    // Restituiamo l'errore esatto al frontend così lo vedi nel box rosso
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
