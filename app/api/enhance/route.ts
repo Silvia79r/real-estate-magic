@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from 'cloudinary'; 
 
-// QUESTA È UN'OPERAZIONE DI DEBUG CRITICO.
-// SE QUESTO NON FUNZIONA, IL PROBLEMA SONO LE CHIAVI O L'ACCOUNT CLOUDINARY.
+export const dynamic = "force-dynamic";
 
-// 👇 👇 👇 INCOLLA QUI I TUOI DATI VERI. NON LASCIARE SPAZI. 👇 👇 👇
+// 👇 INSERISCI I TUOI DATI VERI TRA LE VIRGOLETTE
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
 const CLOUDINARY_API_KEY = "469877913569186"; 
 const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
 
-// Configuriamo il robot con i dati scritti a mano qui sopra.
+// Configuriamo il robot
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
@@ -18,36 +17,39 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
-  console.log("🔥 INIZIO TEST NUCLEARE CLOUDINARY 🔥");
-  console.log("Configurazione usata (Cloud Name):", CLOUDINARY_CLOUD_NAME);
-  // Non logghiamo key e secret per sicurezza, ma sappiamo che sono quelli sopra.
+  try {
+    const { image: originalImageUrl } = await request.json();
+    
+    console.log("🚀 TEST LEGGERO: Generazione Link...");
 
-  const { image: originalImageUrl } = await request.json();
-  if (!originalImageUrl) throw new Error("Manca l'immagine!");
+    // 1. ESTRAZIONE ID (La parte difficile)
+    // Cerchiamo di prendere l'ID pulito dell'immagine dall'URL che ci arriva
+    const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+    const match = originalImageUrl.match(regex);
+    // Se la regex fallisce, usiamo un metodo "grezzo" prendendo l'ultima parte del file
+    const publicId = match && match[1] ? match[1] : originalImageUrl.split('/').pop().split('.')[0];
+    
+    console.log("👉 ID Trovato:", publicId);
 
-  console.log("📸 Immagine originale:", originalImageUrl);
+    // 2. GENERAZIONE URL (Solo Matematica, 0 secondi di attesa)
+    // Usiamo distort:correction (toglie la pancia) + improve (luce)
+    const correctedUrl = cloudinary.url(publicId, {
+        transformation: [
+            { effect: "distort:correction" }, // Toglie effetto barilotto
+            { effect: "improve:outdoor:50" }, // Luce forte
+            { effect: "sharpen:80" }          // Nitidezza
+        ],
+        sign_url: true, // Firma il link per sicurezza
+        fetch_format: 'jpg'
+    });
 
-  // --- IL TEST ---
-  // Chiediamo a Cloudinary di prendere l'immagine originale,
-  // applicare la correzione lente, migliorare la luce, e ridarcela.
-  // USIAMO IL METODO UPLOADER.UPLOAD CHE È IL PIÙ DIRETTO.
-  
-  const result = await cloudinary.uploader.upload(originalImageUrl, {
-      // Queste sono le trasformazioni che VOGLIAMO vedere
-      transformation: [
-          { effect: "distort:correction" }, // Toglie la "pancia" ai muri
-          { effect: "improve:outdoor:60" }, // Luce forte
-          { effect: "sharpen:100" }         // Nitidezza massima
-      ],
-      // Questo dice a Cloudinary di non salvare una copia nuova ma di sovrascrivere
-      // temporaneamente per farci vedere il risultato.
-      overwrite: true, 
-      folder: "test_debug" 
-  });
+    console.log("✅ Link Generato:", correctedUrl);
 
-  console.log("✅ RISULTATO CLOUDINARY:", result);
+    // Restituiamo subito il link. Il browser farà la fatica di scaricarlo.
+    return NextResponse.json({ enhancedImageUrl: correctedUrl });
 
-  // Se arriviamo qui, ha funzionato e ha consumato un credito.
-  // Restituiamo direttamente l'immagine di Cloudinary. Niente Leonardo per ora.
-  return NextResponse.json({ enhancedImageUrl: result.secure_url });
+  } catch (error: any) {
+    console.error("❌ Errore:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
