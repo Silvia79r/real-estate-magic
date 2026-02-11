@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
     if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 1. Avvio Universal Upscaler (Safe Mode):", image);
+    console.log("🚀 1. Avvio Universal Upscaler (Corretto)...", image);
 
     // --- FASE 1: Scarica immagine ---
     const imageRes = await fetch(image);
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- FASE 4: Chiamata UNIVERSAL UPSCALER ---
+    // --- FASE 4: Chiamata UNIVERSAL UPSCALER (Parametri in camelCase) ---
     console.log("🎨 4. Applicazione Upscaler...");
     
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
@@ -55,26 +55,24 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        init_image_id: imageId,
-        generated_image_style: "PHOTOGRAPHY", // Stile fotografico rigoroso
-        upscale_multiplier: 1.5, // Migliora la risoluzione
+        // I parametri devono essere in camelCase per questa API!
+        initImageId: imageId,           // CORRETTO (era init_image_id)
+        upscalerStyle: "CINEMATIC",     // CORRETTO (era generated_image_style)
+        upscaleMultiplier: 1.5,         // CORRETTO (era upscale_multiplier)
+        creativityStrength: 3,          // CORRETTO (era creativity_strength)
         
-        // RIMOSSO IL PARAMETRO CHE DAVA ERRORE (creativity_strength)
-        // Lasciamo il default che è il più sicuro.
-        
-        // Prompt per guidare la luce, non la struttura
         prompt: "Professional real estate photography, vibrant colors, clear sky, natural lighting, sharp focus"
       }),
     });
 
     const upData = await upRes.json();
     
-    // Gestione errore dettagliata
     if (upData.error) {
         console.error("❌ Leonardo Upscaler Error:", upData.error);
         throw new Error(upData.error);
     }
     
+    // Nota: l'ID qui si chiama 'universalUpscalerJob.id', non 'generationId'
     const generationId = upData.universalUpscalerJob?.id;
     if (!generationId) throw new Error("Upscale non avviato: ID mancante");
 
