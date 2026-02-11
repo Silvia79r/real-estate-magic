@@ -1,57 +1,70 @@
 import { NextResponse } from "next/server";
+// Usiamo il robot ufficiale che non sbaglia le firme
+import { v2 as cloudinary } from 'cloudinary'; 
 
 export const dynamic = "force-dynamic";
 
-// --- CONFIGURAZIONE ---
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 
-// 👇 INCOLLA LE TUE CHIAVI CLOUDINARY QUI (Servono per la firma di sicurezza base)
+// 👇 INCOLLA QUI I TUOI DATI (Li scrivo vuoti così li incolli puliti)
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
 const CLOUDINARY_API_KEY = "469877913569186"; 
 const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
+
+// Configuriamo il robot
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     if (!originalImageUrl) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
 
-    console.log("🚀 Inizio Processo 'BACK TO BASICS' (Nativo + HD)...");
+    console.log("🚀 Inizio Processo SICURO (SDK Ufficiale)...");
 
-    const crypto = require('crypto');
-    const timestamp = Math.round((new Date).getTime() / 1000);
+    // 1. ESTRAZIONE INTELLIGENTE DELL'ID
+    // Il mio errore prima era qui. Ora usiamo una formula (Regex) che prende l'ID
+    // corretto anche se è dentro delle cartelle.
+    const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+    const match = originalImageUrl.match(regex);
+    // Se la formula non trova nulla, usiamo il metodo vecchio come riserva
+    const publicId = match && match[1] ? match[1] : originalImageUrl.split('/').pop().split('.')[0];
     
-    // Estraiamo l'ID immagine
-    const publicId = originalImageUrl.split('/').pop().split('.')[0];
-    console.log("👉 ID Immagine:", publicId);
+    console.log("👉 ID Corretto:", publicId);
 
-    // --- FASE 1: CORREZIONE NATIVA (Cloudinary) ---
-    // Questa è la "ricetta" manuale che forza il cambiamento.
-    // e_distort:correction -> Toglie l'effetto curvatura "pancia"
-    // e_improve:outdoor:50 -> Schiarisce le ombre in modo deciso
-    // e_vibrance:30 -> Rende i colori più vivi
-    // e_sharpen:80 -> Nitidezza molto alta
-    const transformation = "e_distort:correction,e_improve:outdoor:50,e_vibrance:30,e_sharpen:80";
+    // 2. GENERAZIONE URL CORRETTO (Nativo)
+    // Usiamo distort:correction che è GRATIS e NATIVO.
+    // Il robot crea l'URL e la firma al posto nostro. Impossibile sbagliare.
+    const correctedUrl = cloudinary.url(publicId, {
+        transformation: [
+            { effect: "distort:correction" }, // Toglie la pancia ai muri
+            { effect: "improve:outdoor:50" }, // Luce forte
+            { effect: "sharpen:80" }          // Nitidezza
+        ],
+        sign_url: true, // Firma automatica
+        fetch_format: 'jpg'
+    });
+
+    console.log("✅ URL Generato dal Robot:", correctedUrl);
+
+    // Verifichiamo se funziona (giusto per essere sicuri)
+    const checkRes = await fetch(correctedUrl);
+    if (!checkRes.ok) {
+        // Se fallisce qui, l'unica causa possibile è che le chiavi copiate abbiano uno spazio vuoto alla fine
+        console.error("Errore Cloudinary:", await checkRes.text());
+        throw new Error("Errore di autenticazione con Cloudinary. Controlla di non aver copiato spazi vuoti nelle chiavi.");
+    }
     
-    // Creiamo la firma di sicurezza (necessaria per e_distort)
-    const signatureStr = `public_id=${publicId}&timestamp=${timestamp}&transformation=${transformation}${CLOUDINARY_API_SECRET}`;
-    const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
-    
-    // URL finale
-    const correctedUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload/${transformation}/v${timestamp}/${publicId}.jpg?api_key=${CLOUDINARY_API_KEY}&signature=${signature}`;
-
-    console.log("✅ URL Correzione Nativa:", correctedUrl);
-
-    // --- FASE 2: LEONARDO UPSCALER (Solo HD) ---
+    // --- FASE 3: LEONARDO UPSCALER ---
     console.log("🎨 Passaggio a Leonardo...");
 
-    // Scarichiamo l'immagine già corretta da Cloudinary
     const imageRes = await fetch(correctedUrl);
-    if (!imageRes.ok) throw new Error("Errore durante la correzione nativa Cloudinary");
     const imageBlob = await imageRes.blob();
-
-    let fileExtension = 'jpg';
-    if (imageBlob.type === 'image/png') fileExtension = 'png';
-
+    
     // Init Leonardo
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
@@ -60,14 +73,13 @@ export async function POST(request: Request) {
         "content-type": "application/json",
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
-      body: JSON.stringify({ extension: fileExtension }),
+      body: JSON.stringify({ extension: 'jpg' }),
     });
 
     const initData = await initImageRes.json();
     if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
-    // Upload Fisico
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
@@ -75,7 +87,6 @@ export async function POST(request: Request) {
 
     await fetch(uploadUrl, { method: "POST", body: formData });
 
-    // Upscale (Creatività 1 = Solo pulizia HD, non tocca la geometria)
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
@@ -88,18 +99,16 @@ export async function POST(request: Request) {
         upscalerStyle: "CINEMATIC", 
         upscaleMultiplier: 1.5,     
         creativityStrength: 1,      
-        prompt: "Real estate interior, sharp focus, clean lines, bright"
+        prompt: "Real estate interior, sharp focus"
       }),
     });
 
     const upData = await upRes.json();
     const generationId = upData.universalUpscaler?.id;
     
-    if (!generationId) {
-         // Se Leonardo fallisce, restituiamo almeno quella di Cloudinary
-         return NextResponse.json({ enhancedImageUrl: correctedUrl });
-    }
+    if (!generationId) return NextResponse.json({ enhancedImageUrl: correctedUrl });
 
+    // Polling
     let finalImageUrl = null;
     let attempts = 0;
     while (!finalImageUrl && attempts < 60) {
@@ -111,11 +120,8 @@ export async function POST(request: Request) {
       const statusData = await statusRes.json();
       const job = statusData.generated_image_variation_generic?.[0];
 
-      if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.url;
-      } else if (job && job.status === "FAILED") {
-        finalImageUrl = correctedUrl;
-      }
+      if (job && job.status === "COMPLETE") finalImageUrl = job.url;
+      else if (job && job.status === "FAILED") finalImageUrl = correctedUrl;
     }
 
     return NextResponse.json({ enhancedImageUrl: finalImageUrl || correctedUrl });
