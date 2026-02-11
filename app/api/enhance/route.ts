@@ -2,30 +2,26 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// 👇 👇 👇 INCOLLA QUI LA TUA CHIAVE LEONARDO (TRA LE VIRGOLETTE) 👇 👇 👇
-// Esempio: const LEONARDO_API_KEY = "eyJhbGciOiJIUzI1Ni...";
+// 👇 TUA CHIAVE (Già inserita dal tuo messaggio precedente)
 const LEONARDO_API_KEY = "4bb36750-a725-4e79-9002-acda8a48a6e8"; 
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     
-    // Controllo di sicurezza per ricordarti di mettere la chiave
     if (!LEONARDO_API_KEY || LEONARDO_API_KEY.includes("INCOLLA_QUI")) {
-        return NextResponse.json({ error: "FERMA! Hai dimenticato di incollare la chiave di Leonardo nel codice (riga 8)!" }, { status: 500 });
+        return NextResponse.json({ error: "Chiave mancante!" }, { status: 500 });
     }
 
-    console.log("🚀 MODO ARCHITETTO: Ricostruzione totale con Leonardo...");
+    console.log("🚀 MODO ARCHITETTO V2: Raddrizzamento Aggressivo...");
 
-    // 1. SCARICHIAMO L'IMMAGINE ORIGINALE (Quella storta)
+    // 1. SCARICA IMMAGINE
     const imageRes = await fetch(originalImageUrl);
     const imageBlob = await imageRes.blob();
-    
-    // Gestione formato file
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
 
-    // 2. CHIEDIAMO IL PERMESSO A LEONARDO DI CARICARE LA FOTO
+    // 2. INIT LEONARDO
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -37,22 +33,21 @@ export async function POST(request: Request) {
     });
 
     const initData = await initImageRes.json();
-    if (!initData.uploadInitImage) throw new Error("Errore Connessione Leonardo: " + JSON.stringify(initData));
+    if (!initData.uploadInitImage) throw new Error("Errore Leonardo Init");
     const { url: uploadUrl, id: initImageId, fields } = initData.uploadInitImage;
 
-    // 3. CARICHIAMO LA FOTO FISICAMENTE
+    // 3. UPLOAD
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
     formData.append("file", imageBlob);
 
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
-    if (!uploadRes.ok) throw new Error("Errore Upload Immagine su Leonardo");
+    if (!uploadRes.ok) throw new Error("Errore Upload");
 
-    console.log("✅ Foto base caricata. Avvio AI Generativa...");
+    console.log("✅ Foto caricata. Rigenerazione geometrica in corso...");
 
-    // 4. GENERIAMO LA NUOVA FOTO (Image to Image)
-    // Qui chiediamo a Leonardo di ridisegnare la stanza DRITTA
+    // 4. GENERAZIONE (Modifiche cruciali qui sotto)
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
       headers: {
@@ -63,11 +58,15 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         height: 768, 
         width: 1024,
-        modelId: "b24e16ff-06e3-43eb-8d33-4416c2d75876", // Modello Phoenix (Realistico)
-        prompt: "Professional real estate photography, wide angle shot of a bedroom, perfectly straight vertical walls, symmetrical composition, 8k resolution, interior design magazine style, hyperrealistic, bright natural lighting",
-        negative_prompt: "distorted, crooked, fish eye, curved lines, blurry, low quality, dark, ugly",
-        init_image_id: initImageId, // Usiamo la tua foto come base
-        init_strength: 0.55,        // Mantiene i mobili ma raddrizza i muri
+        modelId: "b24e16ff-06e3-43eb-8d33-4416c2d75876", // Phoenix Model
+        // PROMPT PIÙ SPECIFICO PER LA PROSPETTIVA
+        prompt: "Architectural photography, perspective correction, perfectly straight vertical lines, 90 degree angles, modern bedroom, real estate listing, 8k resolution, highly detailed, photorealistic",
+        negative_prompt: "curved walls, distorted perspective, fish eye, slanted lines, crooked, messy, blur, low quality, drawing, painting",
+        init_image_id: initImageId,
+        // 👇 QUESTA È LA MODIFICA CHIAVE 👇
+        // Era 0.55 (troppo fedele). Mettiamo 0.30.
+        // L'AI sarà meno "schiava" della foto storta e potrà ridisegnare le linee.
+        init_strength: 0.30,        
         num_images: 1,
         public: false
       }),
@@ -76,16 +75,13 @@ export async function POST(request: Request) {
     const genData = await genRes.json();
     const generationId = genData.sdGenerationJob?.generationId;
 
-    if (!generationId) {
-        console.error("Leonardo Error:", genData);
-        throw new Error("Leonardo non ha avviato il lavoro. Controlla i crediti o la chiave.");
-    }
+    if (!generationId) throw new Error("Leonardo non è partito. Crediti esauriti?");
 
-    // 5. ASPETTIAMO CHE FINISCA
+    // 5. POLLING
     let finalImageUrl = null;
     let attempts = 0;
     while (!finalImageUrl && attempts < 60) {
-      await new Promise((r) => setTimeout(r, 2000)); // Aspetta 2 secondi
+      await new Promise((r) => setTimeout(r, 2000));
       attempts++;
       
       const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
@@ -100,14 +96,12 @@ export async function POST(request: Request) {
             finalImageUrl = job.generated_images[0].url;
         }
       } else if (job && job.status === "FAILED") {
-        throw new Error("Leonardo ha fallito la generazione");
+        throw new Error("Leonardo Failed");
       }
     }
 
-    if (!finalImageUrl) throw new Error("Timeout Generazione");
+    if (!finalImageUrl) throw new Error("Timeout");
 
-    console.log("✨ FOTO RICOSTRUITA E DRITTA:", finalImageUrl);
-    
     return NextResponse.json({ enhancedImageUrl: finalImageUrl });
 
   } catch (error: any) {
