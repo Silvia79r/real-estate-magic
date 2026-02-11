@@ -14,7 +14,8 @@ export default function FotoAIPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const resultImageRef = useRef<HTMLImageElement>(null);
+  
+  // Rimosso resultImageRef perché non serve più per il canvas
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,7 +37,7 @@ export default function FotoAIPage() {
     setError(null);
 
     try {
-      // 1. Upload Cloudinary (Serve solo per passare il link a Leonardo)
+      // 1. Upload su Cloudinary
       const formData = new FormData();
       formData.append("file", imageFile);
       formData.append("upload_preset", UPLOAD_PRESET);
@@ -66,38 +67,65 @@ export default function FotoAIPage() {
     }
   };
 
-  const cropAndDownload = (aspectRatio: number, filename: string) => {
-    if (!resultImageRef.current) return;
-    const img = resultImageRef.current;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // --- NUOVA FUNZIONE DI DOWNLOAD PROFESSIONALE ---
+  // Usa Cloudinary per ritagliare senza perdere qualità
+  const downloadPro = async (format: 'portali' | 'social') => {
+    if (!result) return;
+    setError(null);
 
-    let newWidth = img.naturalWidth;
-    let newHeight = img.naturalWidth / aspectRatio;
+    try {
+      // 1. Se il risultato è di Leonardo, lo ricarichiamo su Cloudinary
+      // per poter usare le sue funzioni di ritaglio professionale.
+      let cloudinaryUrl = result;
+      
+      // Se l'URL non è già di Cloudinary (quindi è di Leonardo), facciamo l'upload
+      if (!result.includes("cloudinary.com")) {
+        setLoading(true); // Mostra "Preparazione Download..."
+        const formData = new FormData();
+        formData.append("file", result);
+        formData.append("upload_preset", UPLOAD_PRESET);
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadResponse.ok) throw new Error("Errore preparazione download");
+        const uploadData = await uploadResponse.json();
+        cloudinaryUrl = uploadData.secure_url;
+      }
 
-    if (newHeight > img.naturalHeight) {
-        newHeight = img.naturalHeight;
-        newWidth = newHeight * aspectRatio;
-    }
+      // 2. Definiamo le trasformazioni di Cloudinary per il ritaglio perfetto
+      let transformation = "";
+      let filename = "";
 
-    canvas.width = newWidth;
-    canvas.height = newHeight;
+      if (format === 'portali') {
+        // Formato 16:9 (Orizzontale) - Ritaglio intelligente e qualità massima
+        transformation = "ar_16:9,c_fill,g_auto,q_auto:best";
+        filename = "foto-portali-pro.jpg";
+      } else {
+        // Formato 4:5 (Verticale Social) - Ritaglio intelligente e qualità massima
+        transformation = "ar_4:5,c_fill,g_auto,q_auto:best";
+        filename = "foto-social-pro.jpg";
+      }
 
-    const startX = (img.naturalWidth - newWidth) / 2;
-    const startY = (img.naturalHeight - newHeight) / 2;
+      // 3. Costruiamo l'URL finale di Cloudinary con le trasformazioni
+      const finalUrl = cloudinaryUrl.replace("/upload/", `/upload/${transformation}/`);
 
-    ctx.drawImage(img, startX, startY, newWidth, newHeight, 0, 0, newWidth, newHeight);
-
-    canvas.toBlob((blob) => {
-      if (!blob) return;
+      // 4. Scarichiamo il file generato da Cloudinary
+      const response = await fetch(finalUrl);
+      const blob = await response.blob();
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    }, 'image/jpeg', 0.95);
+
+    } catch (err: any) {
+      console.error(err);
+      setError("Errore durante il download. Riprova.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -125,11 +153,9 @@ export default function FotoAIPage() {
           ) : (
             <div className="relative rounded-2xl overflow-hidden min-h-[400px] bg-slate-900 flex items-center justify-center">
               <img 
-                ref={resultImageRef}
                 src={result || image} 
                 className="w-full h-auto max-h-[600px] object-contain" 
                 alt="Anteprima" 
-                crossOrigin="anonymous"
               />
               
               <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2">
@@ -139,8 +165,9 @@ export default function FotoAIPage() {
               {loading && (
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm z-20">
                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-white font-bold animate-pulse text-lg">Sviluppo Foto...</p>
-                    <p className="text-slate-400 text-sm mt-2">Attendere...</p>
+                    <p className="text-white font-bold animate-pulse text-lg">
+                        {result ? "Preparazione Download..." : "Sviluppo Foto..."}
+                    </p>
                 </div>
               )}
 
@@ -167,15 +194,15 @@ export default function FotoAIPage() {
             </button>
           )}
           
-          {result && (
+          {result && !loading && (
             <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => cropAndDownload(16/9, 'foto-portali.jpg')} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-green-700 transition shadow-lg shadow-green-200">
+                <button onClick={() => downloadPro('portali')} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-green-700 transition shadow-lg shadow-green-200">
                   <div className="flex items-center gap-2"><Monitor size={20} /> Portali</div>
-                  <span className="text-[10px] opacity-80 font-normal">Formato 16:9</span>
+                  <span className="text-[10px] opacity-80 font-normal">Formato 16:9 HD</span>
                 </button>
-                <button onClick={() => cropAndDownload(4/5, 'foto-social.jpg')} className="w-full bg-pink-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-pink-700 transition shadow-lg shadow-pink-200">
+                <button onClick={() => downloadPro('social')} className="w-full bg-pink-600 text-white py-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 hover:bg-pink-700 transition shadow-lg shadow-pink-200">
                    <div className="flex items-center gap-2"><Instagram size={20} /> Social</div>
-                   <span className="text-[10px] opacity-80 font-normal">Formato 4:5</span>
+                   <span className="text-[10px] opacity-80 font-normal">Formato 4:5 HD</span>
                 </button>
             </div>
           )}
