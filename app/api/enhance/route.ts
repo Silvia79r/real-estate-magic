@@ -1,84 +1,58 @@
 import { NextResponse } from "next/server";
-// Importiamo lo strumento ufficiale (ora funzionerà perché package.json è ok)
-import { v2 as cloudinary } from 'cloudinary'; 
 
 export const dynamic = "force-dynamic";
 
 // --- CONFIGURAZIONE ---
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 
-// 👇 👇 👇 INCOLLA QUI I TUOI DATI VERI (Dalla Dashboard Cloudinary) 👇 👇 👇
+// 👇 INCOLLA LE TUE CHIAVI CLOUDINARY QUI (Servono per la firma di sicurezza base)
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
-const CLOUDINARY_API_KEY = "469877913569186";     // Es: 123456...
-const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0";   // Es: abCde_Fg...
-
-// Configuriamo lo strumento con i tuoi dati
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-  secure: true
-});
+const CLOUDINARY_API_KEY = "469877913569186"; 
+const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     if (!originalImageUrl) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
 
-    console.log("🚀 Inizio Processo VIESUS (Mode: Ufficiale)...");
+    console.log("🚀 Inizio Processo 'BACK TO BASICS' (Nativo + HD)...");
 
-    let imageUrlForLeonardo = null;
+    const crypto = require('crypto');
+    const timestamp = Math.round((new Date).getTime() / 1000);
+    
+    // Estraiamo l'ID immagine
+    const publicId = originalImageUrl.split('/').pop().split('.')[0];
+    console.log("👉 ID Immagine:", publicId);
 
-    // --- FASE 1: RADDRIZZAMENTO (Tentativo Viesus) ---
-    try {
-        // Estraiamo l'ID dell'immagine in modo intelligente
-        // Prende tutto quello che c'è dopo l'ultima barra "/" e toglie ".jpg" o ".png"
-        const publicId = originalImageUrl.split('/').pop().split('.')[0];
-        console.log("👉 ID Immagine:", publicId);
+    // --- FASE 1: CORREZIONE NATIVA (Cloudinary) ---
+    // Questa è la "ricetta" manuale che forza il cambiamento.
+    // e_distort:correction -> Toglie l'effetto curvatura "pancia"
+    // e_improve:outdoor:50 -> Schiarisce le ombre in modo deciso
+    // e_vibrance:30 -> Rende i colori più vivi
+    // e_sharpen:80 -> Nitidezza molto alta
+    const transformation = "e_distort:correction,e_improve:outdoor:50,e_vibrance:30,e_sharpen:80";
+    
+    // Creiamo la firma di sicurezza (necessaria per e_distort)
+    const signatureStr = `public_id=${publicId}&timestamp=${timestamp}&transformation=${transformation}${CLOUDINARY_API_SECRET}`;
+    const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
+    
+    // URL finale
+    const correctedUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload/${transformation}/v${timestamp}/${publicId}.jpg?api_key=${CLOUDINARY_API_KEY}&signature=${signature}`;
 
-        // Generiamo il link "Magico" usando lo strumento ufficiale.
-        // Questo calcola la firma matematica perfetta al posto nostro.
-        const viesusUrl = cloudinary.url(publicId, {
-            transformation: [
-                { effect: "viesus_correct" } // Chiama l'add-on Viesus
-            ],
-            sign_url: true, // Firma automatica (Anti-Errore)
-            fetch_format: 'jpg' 
-        });
+    console.log("✅ URL Correzione Nativa:", correctedUrl);
 
-        console.log("👉 Tentativo URL Viesus:", viesusUrl);
-
-        // Controlliamo se funziona (Se le chiavi sono giuste, risponderà 200 OK)
-        const checkRes = await fetch(viesusUrl);
-        
-        if (checkRes.ok) {
-            imageUrlForLeonardo = viesusUrl;
-            console.log("✅ Viesus ATTIVO! Foto raddrizzata.");
-        } else {
-            console.warn("⚠️ Viesus non ha risposto (Forse chiavi errate o ID non trovato).");
-            throw new Error("Viesus Skip");
-        }
-
-    } catch (e) {
-        // --- PIANO B: RADDRIZZAMENTO NATIVO (Se Viesus fallisce) ---
-        console.log("🔄 Attivo Piano B (Solo Correzione Lente + Luci)...");
-        // e_distort:correction -> Toglie l'effetto "pancia" (Barilotto)
-        // e_improve -> Luci
-        // e_sharpen -> Nitidezza
-        const fallbackTrans = "e_distort:correction,e_improve:outdoor,e_sharpen:60";
-        imageUrlForLeonardo = originalImageUrl.replace("/upload/", `/upload/${fallbackTrans}/`);
-    }
-
-    if (!imageUrlForLeonardo) imageUrlForLeonardo = originalImageUrl;
-
-    // --- FASE 2: LEONARDO UPSCALER (Alta Definizione) ---
+    // --- FASE 2: LEONARDO UPSCALER (Solo HD) ---
     console.log("🎨 Passaggio a Leonardo...");
 
-    const imageRes = await fetch(imageUrlForLeonardo);
+    // Scarichiamo l'immagine già corretta da Cloudinary
+    const imageRes = await fetch(correctedUrl);
+    if (!imageRes.ok) throw new Error("Errore durante la correzione nativa Cloudinary");
     const imageBlob = await imageRes.blob();
+
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
 
+    // Init Leonardo
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -93,6 +67,7 @@ export async function POST(request: Request) {
     if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
+    // Upload Fisico
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
@@ -100,7 +75,7 @@ export async function POST(request: Request) {
 
     await fetch(uploadUrl, { method: "POST", body: formData });
 
-    // Upscale (Creatività 1 = Solo pulizia pixel, non storce le linee)
+    // Upscale (Creatività 1 = Solo pulizia HD, non tocca la geometria)
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
@@ -113,7 +88,7 @@ export async function POST(request: Request) {
         upscalerStyle: "CINEMATIC", 
         upscaleMultiplier: 1.5,     
         creativityStrength: 1,      
-        prompt: "Real estate interior, sharp focus"
+        prompt: "Real estate interior, sharp focus, clean lines, bright"
       }),
     });
 
@@ -121,7 +96,8 @@ export async function POST(request: Request) {
     const generationId = upData.universalUpscaler?.id;
     
     if (!generationId) {
-        return NextResponse.json({ enhancedImageUrl: imageUrlForLeonardo });
+         // Se Leonardo fallisce, restituiamo almeno quella di Cloudinary
+         return NextResponse.json({ enhancedImageUrl: correctedUrl });
     }
 
     let finalImageUrl = null;
@@ -138,11 +114,11 @@ export async function POST(request: Request) {
       if (job && job.status === "COMPLETE") {
         finalImageUrl = job.url;
       } else if (job && job.status === "FAILED") {
-        finalImageUrl = imageUrlForLeonardo;
+        finalImageUrl = correctedUrl;
       }
     }
 
-    return NextResponse.json({ enhancedImageUrl: finalImageUrl || imageUrlForLeonardo });
+    return NextResponse.json({ enhancedImageUrl: finalImageUrl || correctedUrl });
 
   } catch (error: any) {
     console.error("❌ Errore:", error.message);
