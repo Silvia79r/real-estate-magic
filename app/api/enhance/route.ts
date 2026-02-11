@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-// Importiamo lo strumento ufficiale (ora funzionerà perché lo hai aggiunto al package.json)
+// Importiamo lo strumento ufficiale (ora funzionerà perché package.json è ok)
 import { v2 as cloudinary } from 'cloudinary'; 
 
 export const dynamic = "force-dynamic";
@@ -7,12 +7,12 @@ export const dynamic = "force-dynamic";
 // --- CONFIGURAZIONE ---
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 
-// 👇 INCOLLA LE TUE CHIAVI CLOUDINARY QUI
+// 👇 👇 👇 INCOLLA QUI I TUOI DATI VERI (Dalla Dashboard Cloudinary) 👇 👇 👇
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
-const CLOUDINARY_API_KEY = "469877913569186"; 
-const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
+const CLOUDINARY_API_KEY = "469877913569186";     // Es: 123456...
+const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0";   // Es: abCde_Fg...
 
-// Configuriamo lo strumento ufficiale
+// Configuriamo lo strumento con i tuoi dati
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
@@ -25,47 +25,44 @@ export async function POST(request: Request) {
     const { image: originalImageUrl } = await request.json();
     if (!originalImageUrl) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
 
-    console.log("🚀 Inizio Processo VIESUS UFFICIALE...");
+    console.log("🚀 Inizio Processo VIESUS (Mode: Ufficiale)...");
 
     let imageUrlForLeonardo = null;
 
-    // --- TENTATIVO 1: VIESUS (Via Strumento Ufficiale) ---
+    // --- FASE 1: RADDRIZZAMENTO (Tentativo Viesus) ---
     try {
-        // Estraiamo l'ID dell'immagine dall'URL in modo sicuro
-        // Esempio URL: https://res.cloudinary.com/.../upload/v12345/cartella/foto.jpg
-        const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
-        const match = originalImageUrl.match(regex);
-        
-        // Se la regex fallisce, proviamo uno split manuale
-        const publicId = match && match[1] ? match[1] : originalImageUrl.split('/').pop().split('.')[0];
-        
-        console.log("👉 ID estratto per Viesus:", publicId);
+        // Estraiamo l'ID dell'immagine in modo intelligente
+        // Prende tutto quello che c'è dopo l'ultima barra "/" e toglie ".jpg" o ".png"
+        const publicId = originalImageUrl.split('/').pop().split('.')[0];
+        console.log("👉 ID Immagine:", publicId);
 
-        // Generiamo l'URL firmato usando lo strumento ufficiale.
+        // Generiamo il link "Magico" usando lo strumento ufficiale.
         // Questo calcola la firma matematica perfetta al posto nostro.
         const viesusUrl = cloudinary.url(publicId, {
             transformation: [
                 { effect: "viesus_correct" } // Chiama l'add-on Viesus
             ],
-            sign_url: true, // Firma automatica
-            fetch_format: 'jpg' // Forza jpg
+            sign_url: true, // Firma automatica (Anti-Errore)
+            fetch_format: 'jpg' 
         });
 
-        console.log("👉 URL Viesus generato:", viesusUrl);
+        console.log("👉 Tentativo URL Viesus:", viesusUrl);
 
-        // Verifichiamo se funziona
+        // Controlliamo se funziona (Se le chiavi sono giuste, risponderà 200 OK)
         const checkRes = await fetch(viesusUrl);
+        
         if (checkRes.ok) {
             imageUrlForLeonardo = viesusUrl;
-            console.log("✅ Viesus applicato con successo!");
+            console.log("✅ Viesus ATTIVO! Foto raddrizzata.");
         } else {
-            console.warn("⚠️ Viesus fallito, passo al piano B.");
+            console.warn("⚠️ Viesus non ha risposto (Forse chiavi errate o ID non trovato).");
             throw new Error("Viesus Skip");
         }
+
     } catch (e) {
-        // --- TENTATIVO 2: PIANO B (Nativo) ---
-        console.log("🔄 Attivazione Piano B (Correzione Nativa)...");
-        // e_distort:correction -> Toglie pancia muri
+        // --- PIANO B: RADDRIZZAMENTO NATIVO (Se Viesus fallisce) ---
+        console.log("🔄 Attivo Piano B (Solo Correzione Lente + Luci)...");
+        // e_distort:correction -> Toglie l'effetto "pancia" (Barilotto)
         // e_improve -> Luci
         // e_sharpen -> Nitidezza
         const fallbackTrans = "e_distort:correction,e_improve:outdoor,e_sharpen:60";
@@ -74,7 +71,7 @@ export async function POST(request: Request) {
 
     if (!imageUrlForLeonardo) imageUrlForLeonardo = originalImageUrl;
 
-    // --- FASE 3: LEONARDO UPSCALER ---
+    // --- FASE 2: LEONARDO UPSCALER (Alta Definizione) ---
     console.log("🎨 Passaggio a Leonardo...");
 
     const imageRes = await fetch(imageUrlForLeonardo);
@@ -103,6 +100,7 @@ export async function POST(request: Request) {
 
     await fetch(uploadUrl, { method: "POST", body: formData });
 
+    // Upscale (Creatività 1 = Solo pulizia pixel, non storce le linee)
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
@@ -115,7 +113,7 @@ export async function POST(request: Request) {
         upscalerStyle: "CINEMATIC", 
         upscaleMultiplier: 1.5,     
         creativityStrength: 1,      
-        prompt: "Real estate interior, sharp focus, clean lines"
+        prompt: "Real estate interior, sharp focus"
       }),
     });
 
