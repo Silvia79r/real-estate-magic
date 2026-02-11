@@ -11,18 +11,17 @@ export async function POST(request: Request) {
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
     if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 1. Analisi Immagine:", image);
+    console.log("🚀 1. Inizio processo Phoenix per:", image);
 
-    // Scarica e prepara l'immagine
+    // --- FASE 1: Scarica immagine originale ---
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
     
-    // Rileva estensione corretta
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
 
-    // Init Upload
+    // --- FASE 2: Init Upload ---
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -34,10 +33,10 @@ export async function POST(request: Request) {
     });
 
     const initData = await initImageRes.json();
-    if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo: " + JSON.stringify(initData));
+    if (!initData.uploadInitImage) throw new Error(initData.error || "Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
-    // Upload Fisico
+    // --- FASE 3: Upload fisico ---
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
@@ -46,8 +45,8 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- CONFIGURAZIONE "KINO XL" (Realismo Sobrio) ---
-    console.log("🎨 4. Avvio Modello Kino XL (No Allucinazioni)...");
+    // --- FASE 4: Generazione con PHOENIX (Il modello stabile) ---
+    console.log("🎨 4. Avvio generazione Phoenix...");
     
     const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
       method: "POST",
@@ -57,48 +56,45 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // Prompt tecnico: chiediamo SOLO qualità, nessuna modifica strutturale
-        prompt: "Real estate photography, clean view, natural lighting, sharp focus, 8k resolution, balanced exposure, professional color grading. Do not alter the architecture. Do not add furniture.",
+        // Prompt specifico per illuminazione (non struttura)
+        prompt: "Professional real estate photography, sunny day, bright natural lighting, clear blue sky, vibrant colors, sharp focus, 8k, architectural digest style",
         
-        negative_prompt: "distorted, blurry, low quality, artifacts, noise, structural changes, new objects, messy, dark shadows, overexposed, painting, drawing, cartoon",
+        // Negative prompt per bloccare le allucinazioni
+        negative_prompt: "structure change, new walls, distorted, low quality, dark, blurry, different furniture, artifacts, illustration, painting",
         
         init_image_id: imageId,
         
-        // MODELLO: LEONARDO KINO XL
-        // Questo ID è specifico per il fotorealismo stabile.
-        modelId: "aa77f04e-3eec-4034-9c07-d0f619684628",
-
-        // FORZA: 0.20
-        // Mantiene l'80% dei pixel originali intatti. 
-        // Cambia solo la "pasta" della foto (luce/colore).
-        init_strength: 0.20, 
+        // ID del modello LEONARDO PHOENIX (Stabile e fedele)
+        modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
         
-        num_images: 1,
+        // FORZA: 0.40
+        // Phoenix regge meglio la forza. A 0.40 illumina bene senza inventare.
+        init_strength: 0.40, 
         
-        // SPEGNAMO TUTTO IL RESTO per evitare errori e invenzioni
+        // Disattiviamo PhotoReal e Alchemy per avere controllo totale
         alchemy: false,
         photoReal: false,
-        promptMagic: false,
         
-        // Dimensioni: Lasciamo che Leonardo rispetti l'originale o usi preset standard
-        // Non forziamo width/height per evitare crop.
+        num_images: 1,
+        width: 1024, // Standardizziamo per evitare errori, Phoenix adatta l'aspect ratio
+        height: 768
       }),
     });
 
     const genData = await genRes.json();
     
-    // Logghiamo l'errore se c'è, per capire subito cosa succede
     if (genData.error) {
-        console.error("❌ Errore Generazione Leonardo:", genData.error);
+        console.error("❌ Leonardo Error:", genData.error);
         throw new Error(genData.error);
     }
     
     const generationId = genData.sdGenerationJob?.generationId;
-    if (!generationId) throw new Error("Generazione non avviata (Nessun ID)");
+    if (!generationId) throw new Error("Generazione non avviata: ID mancante");
 
-    // Polling
+    // --- FASE 5: Polling ---
     let finalImageUrl = null;
     let attempts = 0;
+
     while (!finalImageUrl && attempts < 60) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
@@ -111,7 +107,6 @@ export async function POST(request: Request) {
       if (job && job.status === "COMPLETE") {
         finalImageUrl = job.generated_images[0].url;
       } else if (job && job.status === "FAILED") {
-        console.error("Fallimento Job:", job);
         throw new Error("Leonardo ha fallito la generazione");
       }
     }
