@@ -1,75 +1,80 @@
 import { NextResponse } from "next/server";
+// Importiamo lo strumento ufficiale (ora funzionerà perché lo hai aggiunto al package.json)
+import { v2 as cloudinary } from 'cloudinary'; 
 
 export const dynamic = "force-dynamic";
 
 // --- CONFIGURAZIONE ---
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
+
 // 👇 INCOLLA LE TUE CHIAVI CLOUDINARY QUI
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
 const CLOUDINARY_API_KEY = "469877913569186"; 
 const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
+
+// Configuriamo lo strumento ufficiale
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     if (!originalImageUrl) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
 
-    console.log("🚀 Inizio Processo Fail-Safe...");
+    console.log("🚀 Inizio Processo VIESUS UFFICIALE...");
 
     let imageUrlForLeonardo = null;
 
-    // --- TENTATIVO 1: VIESUS (Proviamo, ma se fallisce pazienza) ---
+    // --- TENTATIVO 1: VIESUS (Via Strumento Ufficiale) ---
     try {
-        const crypto = require('crypto');
-        const timestamp = Math.round((new Date).getTime() / 1000);
+        // Estraiamo l'ID dell'immagine dall'URL in modo sicuro
+        // Esempio URL: https://res.cloudinary.com/.../upload/v12345/cartella/foto.jpg
+        const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+        const match = originalImageUrl.match(regex);
         
-        // Estrazione ID più robusta
-        // Cerchiamo la parte dopo /upload/v.../
-        // Esempio: .../upload/v123456/cartella/immagine.jpg -> cartella/immagine
-        const parts = originalImageUrl.split(/\/upload\/(?:v\d+\/)?/);
-        if (parts.length < 2) throw new Error("URL non valido");
-        const publicIdWithExt = parts[1]; 
-        const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
-
+        // Se la regex fallisce, proviamo uno split manuale
+        const publicId = match && match[1] ? match[1] : originalImageUrl.split('/').pop().split('.')[0];
+        
         console.log("👉 ID estratto per Viesus:", publicId);
 
-        const transformation = "e_viesus_correct"; 
-        const signatureStr = `public_id=${publicId}&timestamp=${timestamp}&transformation=${transformation}${CLOUDINARY_API_SECRET}`;
-        const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
-        
-        const viesusUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload/${transformation}/v${timestamp}/${publicId}.jpg?api_key=${CLOUDINARY_API_KEY}&signature=${signature}`;
-        
+        // Generiamo l'URL firmato usando lo strumento ufficiale.
+        // Questo calcola la firma matematica perfetta al posto nostro.
+        const viesusUrl = cloudinary.url(publicId, {
+            transformation: [
+                { effect: "viesus_correct" } // Chiama l'add-on Viesus
+            ],
+            sign_url: true, // Firma automatica
+            fetch_format: 'jpg' // Forza jpg
+        });
+
+        console.log("👉 URL Viesus generato:", viesusUrl);
+
+        // Verifichiamo se funziona
         const checkRes = await fetch(viesusUrl);
         if (checkRes.ok) {
-            const data = await checkRes.json();
-            imageUrlForLeonardo = data.secure_url || viesusUrl;
+            imageUrlForLeonardo = viesusUrl;
             console.log("✅ Viesus applicato con successo!");
         } else {
-            // Se fallisce, leggiamo l'errore ma non blocchiamo l'app
-            const err = await checkRes.text();
-            console.warn("⚠️ Viesus non applicato (Errore firma o API):", err);
+            console.warn("⚠️ Viesus fallito, passo al piano B.");
             throw new Error("Viesus Skip");
         }
     } catch (e) {
         // --- TENTATIVO 2: PIANO B (Nativo) ---
         console.log("🔄 Attivazione Piano B (Correzione Nativa)...");
-        
-        // e_distort:correction -> Toglie l'effetto barilotto (muri curvi)
-        // e_improve:outdoor -> Luci
-        // e_sharpen:60 -> Nitidezza
-        // a_auto -> Raddrizzamento automatico base (se possibile)
+        // e_distort:correction -> Toglie pancia muri
+        // e_improve -> Luci
+        // e_sharpen -> Nitidezza
         const fallbackTrans = "e_distort:correction,e_improve:outdoor,e_sharpen:60";
-        
-        // Applichiamo la trasformazione nativa (non richiede firma complessa)
         imageUrlForLeonardo = originalImageUrl.replace("/upload/", `/upload/${fallbackTrans}/`);
     }
 
-    // Rete di sicurezza finale
     if (!imageUrlForLeonardo) imageUrlForLeonardo = originalImageUrl;
-    
-    console.log("📸 Immagine pronta per Leonardo:", imageUrlForLeonardo);
 
-    // --- FASE 3: LEONARDO UPSCALER (Solo Qualità HD) ---
+    // --- FASE 3: LEONARDO UPSCALER ---
     console.log("🎨 Passaggio a Leonardo...");
 
     const imageRes = await fetch(imageUrlForLeonardo);
@@ -98,7 +103,6 @@ export async function POST(request: Request) {
 
     await fetch(uploadUrl, { method: "POST", body: formData });
 
-    // Upscale (Creatività 1 - Solo pulizia)
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
@@ -119,7 +123,6 @@ export async function POST(request: Request) {
     const generationId = upData.universalUpscaler?.id;
     
     if (!generationId) {
-        // Se Leonardo fallisce, restituiamo almeno quella di Cloudinary
         return NextResponse.json({ enhancedImageUrl: imageUrlForLeonardo });
     }
 
@@ -137,7 +140,7 @@ export async function POST(request: Request) {
       if (job && job.status === "COMPLETE") {
         finalImageUrl = job.url;
       } else if (job && job.status === "FAILED") {
-        finalImageUrl = imageUrlForLeonardo; // Fallback
+        finalImageUrl = imageUrlForLeonardo;
       }
     }
 
