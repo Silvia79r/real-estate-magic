@@ -1,113 +1,55 @@
 import { NextResponse } from "next/server";
+import { v2 as cloudinary } from 'cloudinary';
 
 export const dynamic = "force-dynamic";
 
-// 👇 TUA CHIAVE (Già inserita)
-const LEONARDO_API_KEY = "4bb36750-a725-4e79-9002-acda8a48a6e8"; 
+// 👇 INSERISCI QUI LE TUE CHIAVI CLOUDINARY (Quelle che funzionavano all'inizio)
+const CLOUDINARY_CLOUD_NAME = "dfzptsood";
+const CLOUDINARY_API_KEY = "469877913569186";
+const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0";
+
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+  secure: true
+});
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
-    
-    if (!LEONARDO_API_KEY || LEONARDO_API_KEY.includes("INCOLLA_QUI")) {
-        return NextResponse.json({ error: "Chiave mancante!" }, { status: 500 });
-    }
 
-    console.log("🚀 MODO ARCHITETTO V3: Equilibrio tra Realtà e Geometria...");
+    console.log("🚀 MODO GEOMETRA: Correzione Lente Aggressiva...");
 
-    // 1. SCARICA IMMAGINE
-    const imageRes = await fetch(originalImageUrl);
-    const imageBlob = await imageRes.blob();
-    let fileExtension = 'jpg';
-    if (imageBlob.type === 'image/png') fileExtension = 'png';
+    // 1. GENERAZIONE URL DIRETTA (Nessun upload, nessuna attesa)
+    // Usiamo 'fetch' per dire a Cloudinary di prendere l'immagine al volo.
+    const url = cloudinary.url(originalImageUrl, {
+        type: 'fetch',
+        transformation: [
+            // Questo comando TOGLIE LA PANCIA ai muri (Barilotto)
+            { effect: "distort:correction" }, 
+            
+            // Questo comando TOGLIE LA VELATURA (Dehaze)
+            { effect: "dehaze:80" },
+            
+            // Questo comando AUMENTA LA LUCE E IL CONTRASTO
+            { effect: "improve:outdoor:50" },
+            
+            // Questo comando RAFFORZA I DETTAGLI (Nitidezza)
+            { effect: "sharpen:100" },
 
-    // 2. INIT LEONARDO
-    const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        authorization: `Bearer ${LEONARDO_API_KEY}`,
-      },
-      body: JSON.stringify({ extension: fileExtension }),
+            // Ottimizzazioni finali
+            { quality: "auto" },
+            { fetch_format: "jpg" }
+        ],
+        sign_url: true 
     });
 
-    const initData = await initImageRes.json();
-    const { url: uploadUrl, id: initImageId, fields } = initData.uploadInitImage;
+    console.log("✅ Link Generato:", url);
 
-    // 3. UPLOAD
-    const formData = new FormData();
-    const fieldsParsed = JSON.parse(fields);
-    for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
-    formData.append("file", imageBlob);
-
-    const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
-    if (!uploadRes.ok) throw new Error("Errore Upload");
-
-    console.log("✅ Foto caricata. Rigenerazione mirata...");
-
-    // 4. GENERAZIONE (DESCRIZIONE SPECIFICA DELLA TUA STANZA)
-    const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        authorization: `Bearer ${LEONARDO_API_KEY}`,
-      },
-      body: JSON.stringify({
-        height: 768, 
-        width: 1024,
-        modelId: "b24e16ff-06e3-43eb-8d33-4416c2d75876", // Phoenix Model
-        
-        // 👇 QUI DESCRIVIAMO LA TUA STANZA PER NON FARGLIELA INVENTARE 👇
-        prompt: "Bedroom interior, double bed with blue and green patterned quilt, wooden shelving unit with tv, french door with sheer blue curtains, terracotta tile floor, white walls. Architectural photography, perfectly straight vertical lines, perspective correction, 8k resolution, photorealistic, bright natural light",
-        
-        // 👇 VIETIAMO DI CAMBIARE TROPPO 👇
-        negative_prompt: "changing furniture style, different bedspread, distorted perspective, curved walls, fish eye, dark, blurry, low quality",
-        
-        init_image_id: initImageId,
-        
-        // 👇 IL NUMERO DELL'EQUILIBRIO 👇
-        // 0.30 = Casa nuova (Sbagliato)
-        // 0.60 = Casa storta (Sbagliato)
-        // 0.45 = Raddrizza i muri ma tiene i mobili (Giusto)
-        init_strength: 0.45,        
-        num_images: 1,
-        public: false
-      }),
-    });
-
-    const genData = await genRes.json();
-    const generationId = genData.sdGenerationJob?.generationId;
-
-    if (!generationId) throw new Error("Leonardo non è partito.");
-
-    // 5. POLLING
-    let finalImageUrl = null;
-    let attempts = 0;
-    while (!finalImageUrl && attempts < 60) {
-      await new Promise((r) => setTimeout(r, 2000));
-      attempts++;
-      
-      const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
-        headers: { accept: "application/json", authorization: `Bearer ${LEONARDO_API_KEY}` },
-      });
-      
-      const statusData = await statusRes.json();
-      const job = statusData.generations_by_pk;
-
-      if (job && job.status === "COMPLETE") {
-        if (job.generated_images && job.generated_images.length > 0) {
-            finalImageUrl = job.generated_images[0].url;
-        }
-      } else if (job && job.status === "FAILED") {
-        throw new Error("Leonardo Failed");
-      }
-    }
-
-    if (!finalImageUrl) throw new Error("Timeout");
-
-    return NextResponse.json({ enhancedImageUrl: finalImageUrl });
+    // Restituiamo SUBITO il link.
+    // Se la foto originale si vede, si vedrà anche questa.
+    return NextResponse.json({ enhancedImageUrl: url });
 
   } catch (error: any) {
     console.error("❌ Errore:", error.message);
