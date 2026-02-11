@@ -5,49 +5,69 @@ export const dynamic = "force-dynamic";
 // --- CONFIGURAZIONE ---
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 
-// 👇 INCOLLA QUI SOTTO I DATI DI CLOUDINARY (Tra le virgolette!)
+// 👇 RIMETTI I TUOI DATI CLOUDINARY QUI (li trovi nella dashboard)
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
-const CLOUDINARY_API_KEY = "469877913569186";     // Es: "1234567890"
-const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0";   // Es: "abcde_12345"
+const CLOUDINARY_API_KEY = "469877913569186"; 
+const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
 
 export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
 
     if (!originalImageUrl) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
-    if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 Inizio Pipeline: Raddrizzamento + Upscale");
+    console.log("🚀 Inizio Processo Professionale (Geometra + Fotografo)...");
 
-    // --- FASE 1: IL GEOMETRA (Cloudinary) ---
-    // Prendiamo l'URL che ci arriva e aggiungiamo i comandi per raddrizzare e pulire.
-    // e_improve: migliora luci e colori automaticamente
-    // e_straighten: raddrizza le linee storte
-    // q_auto:best: massima qualità jpg
+    // --- FASE 1: IL GEOMETRA (Cloudinary Viesus) ---
+    // Questo passaggio ora funzionerà se hai attivato l'Add-on "Viesus" (Free tier)
+    console.log("📐 1. Raddrizzamento prospettiva...");
     
-    // Trucco: Manipoliamo l'URL per scaricare la versione già corretta
-    const splitUrl = originalImageUrl.split("/upload/");
-    if (splitUrl.length !== 2) throw new Error("URL Cloudinary non valido");
+    // Creiamo un URL firmato per usare l'add-on in sicurezza
+    const crypto = require('crypto');
+    const timestamp = Math.round((new Date).getTime() / 1000);
     
-    // Creiamo l'URL "Magico" che raddrizza la foto
-    const straightenedUrl = `${splitUrl[0]}/upload/e_improve,e_straighten,q_auto:best/${splitUrl[1]}`;
+    // Estraiamo il public_id
+    const urlParts = originalImageUrl.split('/');
+    const filename = urlParts.pop();
+    const publicId = filename.split('.')[0];
     
-    console.log("📐 1. Geometra (Cloudinary): Foto raddrizzata ->", straightenedUrl);
+    // Parametri per Viesus: correzione occhi rossi, luce e soprattutto PROSPETTIVA
+    const transformation = "e_viesus_correct"; 
 
-    // Scarichiamo questa nuova versione "pulita"
-    const imageRes = await fetch(straightenedUrl);
-    if (!imageRes.ok) throw new Error("Impossibile scaricare l'immagine raddrizzata");
+    // Generiamo la firma corretta per l'add-on
+    const signatureStr = `public_id=${publicId}&timestamp=${timestamp}&transformation=${transformation}${CLOUDINARY_API_SECRET}`;
+    const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
+
+    // Costruiamo l'URL finale
+    const straightenedUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload/${transformation}/v${timestamp}/${publicId}.jpg?api_key=${CLOUDINARY_API_KEY}&signature=${signature}`;
+    
+    // Verifichiamo se funziona (se l'add-on è attivo, risponde 200 OK)
+    const checkRes = await fetch(straightenedUrl);
+    
+    let imageUrlForLeonardo = originalImageUrl; // Fallback: se fallisce, usiamo l'originale
+    
+    if (checkRes.ok) {
+        // Se Viesus ha funzionato, usiamo l'immagine raddrizzata!
+        // Nota: Viesus restituisce un JSON con l'url
+        const data = await checkRes.json();
+        imageUrlForLeonardo = data.secure_url || straightenedUrl;
+        console.log("✅ Immagine raddrizzata con successo!");
+    } else {
+        console.warn("⚠️ Add-on Viesus non attivo o errore firma. Procedo con raddrizzamento base.");
+        // Riprova con un raddrizzamento standard (meno potente ma non richiede add-on)
+        imageUrlForLeonardo = originalImageUrl.replace("/upload/", "/upload/a_auto,e_improve,e_sharpen:50/");
+    }
+
+    // --- FASE 2: IL FOTOGRAFO (Leonardo Upscaler) ---
+    // Ora passiamo l'immagine (sperabilmente dritta) a Leonardo per la qualità HD
+    console.log("🎨 2. Sviluppo HD (Upscaler)...");
+
+    const imageRes = await fetch(imageUrlForLeonardo);
     const imageBlob = await imageRes.blob();
-    
-    // Definiamo estensione (serve a Leonardo)
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
 
-
-    // --- FASE 2: IL FOTOGRAFO (Leonardo Upscaler) ---
-    console.log("🎨 2. Fotografo (Leonardo): Sviluppo alta definizione...");
-
-    // Init Upload su Leonardo
+    // Init Upload
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -59,19 +79,17 @@ export async function POST(request: Request) {
     });
 
     const initData = await initImageRes.json();
-    if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
-    // Upload fisico dell'immagine (quella raddrizzata da Cloudinary)
+    // Upload
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
     formData.append("file", imageBlob);
 
-    const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
-    if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
+    await fetch(uploadUrl, { method: "POST", body: formData });
 
-    // Avvio Upscaler
+    // Upscale SICURO (Creativity 3 = Niente Piante)
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
@@ -81,17 +99,16 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         initImageId: imageId,
-        upscalerStyle: "CINEMATIC", // Stile realistico
-        upscaleMultiplier: 1.5,     // Aumenta definizione
-        creativityStrength: 3,      // BASSA: Pulisce ma NON inventa piante
-        prompt: "Real estate interior, sharp focus, straight lines, bright natural lighting"
+        upscalerStyle: "CINEMATIC", 
+        upscaleMultiplier: 1.5,     
+        creativityStrength: 3, // Blocca le allucinazioni     
+        prompt: "Real estate interior, straight lines, sharp focus, natural lighting"
       }),
     });
 
     const upData = await upRes.json();
-    if (upData.error) throw new Error(upData.error);
-    
     const generationId = upData.universalUpscaler?.id;
+    
     if (!generationId) throw new Error("Upscale non avviato");
 
     // Polling
@@ -104,22 +121,17 @@ export async function POST(request: Request) {
         headers: { accept: "application/json", authorization: `Bearer ${LEONARDO_API_KEY}` },
       });
       const statusData = await statusRes.json();
-      
-      // Controllo stato
       const job = statusData.generated_image_variation_generic?.[0];
+
       if (job && job.status === "COMPLETE") {
         finalImageUrl = job.url;
-      } else if (job && job.status === "FAILED") {
-        throw new Error("Leonardo Upscaler fallito");
-      }
+      } else if (job && job.status === "FAILED") throw new Error("Leonardo Failed");
     }
-
-    if (!finalImageUrl) throw new Error("Timeout Leonardo");
 
     return NextResponse.json({ enhancedImageUrl: finalImageUrl });
 
   } catch (error: any) {
-    console.error("❌ Errore Backend:", error.message);
+    console.error("❌ Errore:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
