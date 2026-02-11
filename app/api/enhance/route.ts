@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 export const dynamic = "force-dynamic";
 
-// 👇 INSERISCI LE TUE CHIAVI (Senza spazi!)
+// 👇 INSERISCI LE TUE CHIAVI
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
 const CLOUDINARY_API_KEY = "469877913569186"; 
 const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
@@ -20,62 +20,46 @@ export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     
-    console.log("🚀 MODO FETCH: Aggiro il problema dell'ID...");
+    console.log("🚀 MODO EXPLICIT: Forzo la trasformazione sul server...");
 
-    // IL TRUCCO:
-    // Invece di estrarre l'ID e rischiare di sbagliare, usiamo l'URL intero.
-    // type: 'fetch' dice a Cloudinary di trattare l'immagine come esterna/nuova
-    // Questo resetta ogni problema di firme vecchie.
+    // 1. ESTRAZIONE CHIRURGICA DELL'ID
+    // Dobbiamo trovare l'ID esatto (es. "folder/immagine") pulendo tutto il resto.
+    const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+    const match = originalImageUrl.match(regex);
     
-    const viesusUrl = cloudinary.url(originalImageUrl, {
-        type: 'fetch', // <--- QUESTA È LA CHIAVE
-        transformation: [
-            { effect: "viesus_correct" } // Raddrizzamento VERO (Add-on)
-        ],
-        sign_url: true, // Firma l'URL intero (infallibile)
-        fetch_format: 'jpg'
+    if (!match || !match[1]) {
+        throw new Error("Non riesco a trovare l'ID dell'immagine. URL strano.");
+    }
+    
+    const publicId = match[1];
+    console.log("👉 ID Trovato:", publicId);
+
+    // 2. IL COMANDO "EXPLICIT" (L'unico che conta i crediti sul serio)
+    // Questo obbliga Cloudinary a processare l'immagine ORA e salvarla.
+    const result = await cloudinary.uploader.explicit(publicId, {
+        type: "upload",
+        eager: [
+            { effect: "viesus_correct" } // Applica Viesus
+        ]
     });
 
-    console.log("✅ Link Fetch Generato:", viesusUrl);
-    console.log("⏳ Attendo che Viesus elabori (Ping)...");
+    console.log("✅ Cloudinary ha risposto!");
 
-    // "Ping" di verifica: Aspettiamo che Cloudinary abbia finito prima di darti il link
-    // Così non vedi l'icona rotta.
-    let isReady = false;
-    let attempts = 0;
-    let finalUrl = null;
-
-    while (!isReady && attempts < 15) { // Proviamo per 20 secondi circa
-        try {
-            const check = await fetch(viesusUrl);
-            if (check.ok) {
-                isReady = true;
-                finalUrl = viesusUrl;
-                console.log("🔥 Viesus HA RISPOSTO! Immagine pronta.");
-            } else {
-                // Se da errore, aspettiamo. Viesus ci mette un po' la prima volta.
-                console.log(`❄️ Elaborazione in corso... (${attempts + 1})`);
-                await new Promise(r => setTimeout(r, 1500));
-            }
-        } catch (e) {
-            await new Promise(r => setTimeout(r, 1500));
-        }
-        attempts++;
+    // 3. RECUPERO URL
+    // result.eager contiene l'immagine trasformata.
+    if (result.eager && result.eager.length > 0) {
+        const finalUrl = result.eager[0].secure_url;
+        console.log("🔥 URL Viesus Definitivo:", finalUrl);
+        return NextResponse.json({ enhancedImageUrl: finalUrl });
+    } else {
+        console.warn("⚠️ Viesus non applicato (nessun output eager).");
+        // Fallback estremo se Viesus non parte
+        return NextResponse.json({ enhancedImageUrl: originalImageUrl });
     }
-
-    if (!finalUrl) {
-        console.warn("⚠️ Viesus lento o non partito. Uso fallback nativo.");
-        // Se Viesus fallisce anche in fetch, usiamo la correzione nativa sulla URL originale
-        // Ma almeno ci abbiamo provato nel modo più pulito possibile.
-        const fallbackUrl = originalImageUrl.replace("/upload/", "/upload/e_distort:correction,e_improve:outdoor,e_sharpen:60/");
-        return NextResponse.json({ enhancedImageUrl: fallbackUrl });
-    }
-
-    // Se arriviamo qui, Viesus ha funzionato!
-    return NextResponse.json({ enhancedImageUrl: finalUrl });
 
   } catch (error: any) {
     console.error("❌ Errore:", error.message);
+    // Se fallisce, restituiamo l'originale per non bloccare l'app, ma logghiamo l'errore
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
