@@ -11,14 +11,16 @@ export async function POST(request: Request) {
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
     if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 1. Inizio Leonardo (Modalità 90% Fedeltà):", image);
+    console.log("🚀 1. Avvio Universal Upscaler (Restauro Fedele):", image);
 
+    // --- FASE 1: Scarica immagine ---
     const imageRes = await fetch(image);
     const imageBlob = await imageRes.blob();
     let fileExtension = 'jpg';
     if (imageBlob.type === 'image/png') fileExtension = 'png';
     else if (imageBlob.type === 'image/webp') fileExtension = 'webp';
 
+    // --- FASE 2: Init Upload ---
     const initImageRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-image", {
       method: "POST",
       headers: {
@@ -33,6 +35,7 @@ export async function POST(request: Request) {
     if (!initData.uploadInitImage) throw new Error("Errore Init Leonardo");
     const { url: uploadUrl, id: imageId, fields } = initData.uploadInitImage;
 
+    // --- FASE 3: Upload fisico ---
     const formData = new FormData();
     const fieldsParsed = JSON.parse(fields);
     for (const key in fieldsParsed) formData.append(key, fieldsParsed[key]);
@@ -41,10 +44,11 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- GENERAZIONE BLINDATA AL 90% ---
-    console.log("🎨 4. Avvio Generazione (Solo Luci e Colori)...");
+    // --- FASE 4: Chiamata UNIVERSAL UPSCALER ---
+    // Questo endpoint è specifico per migliorare senza inventare.
+    console.log("🎨 4. Applicazione Upscaler...");
     
-    const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
+    const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
       method: "POST",
       headers: {
         accept: "application/json",
@@ -52,56 +56,58 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // Prompt ridotto all'osso: SOLO LUCE E METEO.
-        // Niente "real estate", "luxury", "architecture" che confondono l'AI.
-        prompt: "sunny day, clear blue sky, warm sunlight, vivid colors, high contrast. 8k resolution.",
-        
-        negative_prompt: "rain, clouds, fog, gray, low contrast, blur",
-        
         init_image_id: imageId,
+        generated_image_style: "PHOTOGRAPHY", // Stile fotografico
+        upscale_multiplier: 1.5, // Aumenta leggermente la risoluzione per pulire i dettagli
         
-        // IL PARAMETRO SALVA-VITA: 0.8
-        // Significa: "La foto finale deve essere all'80% IDENTICA all'originale".
-        // Quel 20% di differenza serve solo per colorare il cielo.
-        init_strength: 0.8, 
+        // CREATIVITY STRENGTH (Da 1 a 10)
+        // Mettiamo 3. Basso abbastanza da non inventare, 
+        // alto abbastanza da correggere la luce.
+        creativity_strength: 3, 
         
-        // Modello Phoenix (Stabile)
-        modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
-        
-        num_images: 1,
-        // Nessun preset magico, restiamo sul semplice
-        alchemy: false,
-        photoReal: false,
+        // Prompt opzionale per guidare il "restauro"
+        prompt: "Professional real estate photography, clear, sharp focus, vibrant colors, natural lighting"
       }),
     });
 
-    const genData = await genRes.json();
+    const upData = await upRes.json();
     
-    if (genData.error) { throw new Error(genData.error); }
-    const generationId = genData.sdGenerationJob?.generationId;
-    if (!generationId) throw new Error("Generazione non avviata");
+    if (upData.error) {
+        console.error("❌ Leonardo Upscaler Error:", upData.error);
+        throw new Error(upData.error);
+    }
+    
+    const generationId = upData.universalUpscalerJob?.id;
+    if (!generationId) throw new Error("Upscale non avviato: ID mancante");
 
+    // --- FASE 5: Polling ---
+    // Attenzione: L'upscaler usa un endpoint diverso per il controllo stato
     let finalImageUrl = null;
     let attempts = 0;
+
     while (!finalImageUrl && attempts < 60) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
-      const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
+      
+      const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler/${generationId}`, {
         headers: { accept: "application/json", authorization: `Bearer ${LEONARDO_API_KEY}` },
       });
+      
       const statusData = await statusRes.json();
-      const job = statusData.generations_by_pk;
+      const job = statusData.universalUpscalerJob; // Struttura diversa rispetto a "generations"
       
       if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.generated_images[0].url;
+        finalImageUrl = job.generated_image.url; // Percorso diverso
       } else if (job && job.status === "FAILED") {
-        throw new Error("Leonardo ha fallito la generazione");
+        throw new Error("Leonardo Upscaler fallito");
       }
     }
 
     if (!finalImageUrl) throw new Error("Timeout Leonardo");
 
-    return NextResponse.json({ enhancedImageUrl: finalImageUrl });
+    return NextResponse.json({
+      enhancedImageUrl: finalImageUrl,
+    });
 
   } catch (error: any) {
     console.error("❌ Errore Backend:", error.message);
