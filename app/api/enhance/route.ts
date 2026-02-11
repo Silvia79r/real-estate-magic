@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 export const dynamic = "force-dynamic";
 
-// 👇 INSERISCI LE TUE CHIAVI (Verifica che non ci siano spazi)
+// 👇 INSERISCI LE TUE CHIAVI
 const CLOUDINARY_CLOUD_NAME = "dfzptsood"; 
 const CLOUDINARY_API_KEY = "469877913569186"; 
 const CLOUDINARY_API_SECRET = "L1RR-AzlrdZCosB-dSiGJSavxH0"; 
@@ -20,62 +20,54 @@ export async function POST(request: Request) {
   try {
     const { image: originalImageUrl } = await request.json();
     
-    // 1. GENERAZIONE URL (Con rotazione automatica GRATIS)
-    // Non serve estrarre ID complessi. Usiamo la modalità "fetch" che è più sicura.
-    // a_auto: Prova a raddrizzare l'orizzonte automaticamente
-    // distort:correction: Toglie la curvatura della lente
+    // 1. GENERAZIONE URL (Algoritmo Visivo)
+    // Invece di 'angle: auto' (che si fida del telefono), usiamo 'e_straighten'.
+    // Questo guarda i muri e le porte e RUOTA la foto fisicamente.
+    // e_improve:outdoor: Migliora la luce.
+    
     const correctedUrl = cloudinary.url(originalImageUrl, {
         type: 'fetch', 
         transformation: [
-            { angle: "auto" },            // <--- QUESTO RADDRIZZA (Rotazione)
-            { effect: "distort:correction" }, // <--- QUESTO TOGLIE LA PANCIA
-            { effect: "improve:outdoor:50" }, // <--- LUCE
-            { effect: "sharpen:80" }          // <--- NITIDEZZA
+            { effect: "straighten" },     // <--- ALGORITMO RADDRIZZAMENTO VISIVO
+            { effect: "improve:outdoor" }, // <--- LUCE E COLORI
+            { effect: "sharpen:60" }       // <--- NITIDEZZA
         ],
         sign_url: true, 
         fetch_format: 'jpg'
     });
 
-    console.log("⏳ Link generato. Attendo elaborazione Cloudinary...");
+    console.log("⏳ Link 'Straighten' generato. Attendo elaborazione...");
 
-    // 2. CICLO DI ATTESA (Il server controlla che il file esista davvero)
-    // Questo blocca tutto finché la foto non è PRONTA.
-    // Risolve il problema del file "0 byte".
+    // 2. CICLO DI ATTESA (Anti-File Vuoto)
     let isValid = false;
     let attempts = 0;
 
-    // Proviamo per 15 volte (circa 30 secondi di attesa massima)
+    // Aspettiamo fino a 30 secondi che Cloudinary raddrizzi la foto
     while (!isValid && attempts < 15) {
         try {
             const check = await fetch(correctedUrl);
             if (check.ok) {
                 const blob = await check.blob();
-                // Se il file è più grande di 2KB, è una foto vera.
+                // Se il file pesa più di 2KB, è pronto
                 if (blob.size > 2000) { 
                     isValid = true;
-                    console.log(`✅ Foto pronta! Dimensione: ${blob.size} bytes`);
-                } else {
-                    console.log(`❄️ Elaborazione in corso... (Tentativo ${attempts})`);
                 }
             }
         } catch (e) {
-            // Ignora errori di rete e riprova
+            // Ignora errori di rete
         }
         
         if (!isValid) {
-            // Aspetta 2 secondi prima di riprovare
             await new Promise(r => setTimeout(r, 2000));
             attempts++;
         }
     }
 
     if (!isValid) {
-        // Se dopo 30 secondi Cloudinary non risponde, ti ridò l'originale
-        // per non bloccare l'app, ma almeno non ti scarica un file rotto.
+        // Se fallisce il tempo limite, restituiamo l'originale per non rompere l'app
         return NextResponse.json({ enhancedImageUrl: originalImageUrl });
     }
 
-    // Se siamo qui, la foto è raddrizzata e SCARICABILE.
     return NextResponse.json({ enhancedImageUrl: correctedUrl });
 
   } catch (error: any) {
