@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
-    // --- FASE 4: Chiamata UNIVERSAL UPSCALER (Parametri in camelCase) ---
+    // --- FASE 4: Chiamata UNIVERSAL UPSCALER ---
     console.log("🎨 4. Applicazione Upscaler...");
     
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
@@ -55,12 +55,10 @@ export async function POST(request: Request) {
         authorization: `Bearer ${LEONARDO_API_KEY}`,
       },
       body: JSON.stringify({
-        // I parametri devono essere in camelCase per questa API!
-        initImageId: imageId,           // CORRETTO (era init_image_id)
-        upscalerStyle: "CINEMATIC",     // CORRETTO (era generated_image_style)
-        upscaleMultiplier: 1.5,         // CORRETTO (era upscale_multiplier)
-        creativityStrength: 3,          // CORRETTO (era creativity_strength)
-        
+        initImageId: imageId,           
+        upscalerStyle: "CINEMATIC",     
+        upscaleMultiplier: 1.5,         
+        creativityStrength: 3, 
         prompt: "Professional real estate photography, vibrant colors, clear sky, natural lighting, sharp focus"
       }),
     });
@@ -72,11 +70,16 @@ export async function POST(request: Request) {
         throw new Error(upData.error);
     }
     
-    // Nota: l'ID qui si chiama 'universalUpscalerJob.id', non 'generationId'
-    const generationId = upData.universalUpscalerJob?.id;
-    if (!generationId) throw new Error("Upscale non avviato: ID mancante");
+    // CORREZIONE CRUCIALE: L'oggetto si chiama 'universalUpscaler', non 'universalUpscalerJob'
+    const generationId = upData.universalUpscaler?.id;
+    
+    if (!generationId) {
+        console.error("Risposta Leonardo imprevista:", upData);
+        throw new Error("Upscale non avviato: ID mancante");
+    }
 
-    // --- FASE 5: Polling ---
+    // --- FASE 5: Polling (Controllo Stato) ---
+    // CORREZIONE URL: Usiamo l'endpoint generico delle variazioni
     let finalImageUrl = null;
     let attempts = 0;
 
@@ -84,15 +87,17 @@ export async function POST(request: Request) {
       await new Promise((r) => setTimeout(r, 2000));
       attempts++;
       
-      const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler/${generationId}`, {
+      const statusRes = await fetch(`https://cloud.leonardo.ai/api/rest/v1/variations/${generationId}`, {
         headers: { accept: "application/json", authorization: `Bearer ${LEONARDO_API_KEY}` },
       });
       
       const statusData = await statusRes.json();
-      const job = statusData.universalUpscalerJob;
       
+      // Leonardo a volte restituisce l'oggetto direttamente o dentro un array
+      const job = statusData.generated_image_variation_generic?.[0] || statusData;
+
       if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.generated_image.url;
+        finalImageUrl = job.url; // A volte è 'url', a volte 'generated_image.url', ma 'url' è standard per le variazioni
       } else if (job && job.status === "FAILED") {
         throw new Error("Leonardo Upscaler fallito");
       }
