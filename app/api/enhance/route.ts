@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     if (!image) return NextResponse.json({ error: "Manca l'URL dell'immagine" }, { status: 400 });
     if (!LEONARDO_API_KEY) return NextResponse.json({ error: "Manca la chiave API di Leonardo" }, { status: 500 });
 
-    console.log("🚀 1. Avvio Universal Upscaler (Restauro Fedele):", image);
+    console.log("🚀 1. Avvio Universal Upscaler (Safe Mode):", image);
 
     // --- FASE 1: Scarica immagine ---
     const imageRes = await fetch(image);
@@ -45,7 +45,6 @@ export async function POST(request: Request) {
     if (!uploadRes.ok) throw new Error("Fallito upload immagine su Leonardo");
 
     // --- FASE 4: Chiamata UNIVERSAL UPSCALER ---
-    // Questo endpoint è specifico per migliorare senza inventare.
     console.log("🎨 4. Applicazione Upscaler...");
     
     const upRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/variations/universal-upscaler", {
@@ -57,21 +56,20 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         init_image_id: imageId,
-        generated_image_style: "PHOTOGRAPHY", // Stile fotografico
-        upscale_multiplier: 1.5, // Aumenta leggermente la risoluzione per pulire i dettagli
+        generated_image_style: "PHOTOGRAPHY", // Stile fotografico rigoroso
+        upscale_multiplier: 1.5, // Migliora la risoluzione
         
-        // CREATIVITY STRENGTH (Da 1 a 10)
-        // Mettiamo 3. Basso abbastanza da non inventare, 
-        // alto abbastanza da correggere la luce.
-        creativity_strength: 3, 
+        // RIMOSSO IL PARAMETRO CHE DAVA ERRORE (creativity_strength)
+        // Lasciamo il default che è il più sicuro.
         
-        // Prompt opzionale per guidare il "restauro"
-        prompt: "Professional real estate photography, clear, sharp focus, vibrant colors, natural lighting"
+        // Prompt per guidare la luce, non la struttura
+        prompt: "Professional real estate photography, vibrant colors, clear sky, natural lighting, sharp focus"
       }),
     });
 
     const upData = await upRes.json();
     
+    // Gestione errore dettagliata
     if (upData.error) {
         console.error("❌ Leonardo Upscaler Error:", upData.error);
         throw new Error(upData.error);
@@ -81,7 +79,6 @@ export async function POST(request: Request) {
     if (!generationId) throw new Error("Upscale non avviato: ID mancante");
 
     // --- FASE 5: Polling ---
-    // Attenzione: L'upscaler usa un endpoint diverso per il controllo stato
     let finalImageUrl = null;
     let attempts = 0;
 
@@ -94,10 +91,10 @@ export async function POST(request: Request) {
       });
       
       const statusData = await statusRes.json();
-      const job = statusData.universalUpscalerJob; // Struttura diversa rispetto a "generations"
+      const job = statusData.universalUpscalerJob;
       
       if (job && job.status === "COMPLETE") {
-        finalImageUrl = job.generated_image.url; // Percorso diverso
+        finalImageUrl = job.generated_image.url;
       } else if (job && job.status === "FAILED") {
         throw new Error("Leonardo Upscaler fallito");
       }
